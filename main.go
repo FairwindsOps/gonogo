@@ -17,6 +17,13 @@ package main
 
 import "github.com/fairwindsops/hall-monitor/cmd"
 
+var (
+	// version is set during build
+	version = "0.0.0"
+	// commit is set during build
+	commit = "n/a"
+)
+
 func main() {
-	cmd.Execute()
+	cmd.Execute(version, commit)
 }
