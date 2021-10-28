@@ -36,7 +36,16 @@ var (
 var rootCmd = &cobra.Command{
 	Use:   "hall-monitor",
 	Short: "Validates whether or not an add-on is safe to upgrade",
-	Long:  `The Kubernetes Add-On Upgrade Validation Bundle is a spec that can be used to define and then discover an add-on upgrade is safe to perform.`,
+	Long:  `The Kubernetes Add-On Upgrade Validation Bundle is a spec that can be used to define and then discover if an add-on upgrade is safe to perform.`,
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("You must specify a sub-command.")
+		err := cmd.Help()
+		if err != nil {
+			klog.Error(err)
+		}
+		os.Exit(1)
+	},
+}
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
