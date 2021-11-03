@@ -17,28 +17,45 @@ package cmd
 
 import (
 	"fmt"
+	"io/ioutil"
+	"log"
+	"os"
 
 	"github.com/spf13/cobra"
 )
 
 // readSpecFileCmd represents the readSpecFile command
 var readSpecFileCmd = &cobra.Command{
-	Use:   "read [file to process]",
-	Short: "Parse file",
-	Long: `Provide file that adheres to the bundle spec for parsing`,
+	Use:     "read [file to process]",
+	Short:   "Parse file",
+	Long:    `Provide file that adheres to the bundle spec for parsing`,
+	PreRunE: validateArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Reading spec file")
-
-
+		fmt.Printf("Reading spec %s\n", args[0])
+		readSpecFile(args[0])
 	},
 }
 
-var (
-	filename string
-)
+func readSpecFile(file string) {
+	body, err := ioutil.ReadFile(file)
+	if err != nil {
+		log.Fatalf("unable to read file: %v", err)
+	}
+	fmt.Println(string(body))
+}
+
+func validateArgs(cmd *cobra.Command, args []string) error {
+	if len(args) == 0 {
+		return fmt.Errorf("you must specify a spec file")
+	}
+
+	_, err := os.Stat(args[0])
+	if os.IsNotExist(err) {
+		return fmt.Errorf("spec file %s does not exist", args[0])
+	}
+	return err
+}
 
 func init() {
 	rootCmd.AddCommand(readSpecFileCmd)
-	readSpecFileCmd.Flags().StringVarP(&filename, "filename", "f", "", "A bundle spec file to parse")
 }
- 
