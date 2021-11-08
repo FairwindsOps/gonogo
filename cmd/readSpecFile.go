@@ -17,10 +17,10 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 
+	"github.com/fairwindsops/hall-monitor/pkg/bundle"
 	"github.com/spf13/cobra"
 )
 
@@ -32,20 +32,16 @@ var readSpecFileCmd = &cobra.Command{
 	PreRunE: validateArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Printf("Reading spec %s\n", args[0])
-		readSpecFile(args[0])
+		config, err := bundle.ReadConfig(args[0])
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Printf("%v\n", config)
 	},
 }
 
-func readSpecFile(file string) {
-	body, err := ioutil.ReadFile(file)
-	if err != nil {
-		log.Fatalf("unable to read file: %v", err)
-	}
-	fmt.Println(string(body))
-}
-
 func validateArgs(cmd *cobra.Command, args []string) error {
-	if len(args) == 0 {
+	if len(args) != 1 {
 		return fmt.Errorf("you must specify a spec file")
 	}
 
