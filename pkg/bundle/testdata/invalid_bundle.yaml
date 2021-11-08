@@ -1,0 +1,21 @@
+addons:
+- name: external-dns
+  versions:
+    start: 1.1.0
+    end: 1.2.0
+  note: A text field with general notes
+  source:
+    chart: external-dns
+    repository: https://charts.bitnami.com/bitnami
+  warnings: "this is a warning"
+  compatible_k8s_versions:
+  - 1.20
+  - 1.18
+  necessary_api_versions:
+  - apps/v1
+  - core/v1
+  values_schema: ""
+  opa_checks:
+  - Type From the existing OPA Package 
+  - OPACustomCheck 
+  - Handle resources
