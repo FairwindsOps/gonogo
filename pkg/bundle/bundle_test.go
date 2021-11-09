@@ -51,22 +51,8 @@ func TestReadConfig(t *testing.T) {
 		},
 		{
 			name: "file is not valid syntax",
-			file: "invalid_bundle.yaml",
-			want: &BundleConfig{
-				Addons: []Bundle{
-					{
-						Name:                  "external-dns",
-						Versions:              Versions{"1.1.0", "1.2.0"},
-						Notes:                 "A text field with general notes",
-						Source:                Source{"external-dns", "https://charts.bitnami.com/bitnami"},
-						Warnings:              []string{"warning 1", "warning 2"},
-						CompatibleK8SVersions: []string{"1.20", "1.18"},
-						NecessaryAPIVersions:  []string{"apps/v1", "core/v1"},
-						ValuesSchema:          "",
-						OpaChecks:             []string{"Type From the existing OPA Package", "OPACustomCheck", "Handle resources"},
-					},
-				},
-			},
+			file: "testdata/invalid_bundle.yaml",
+			want: &BundleConfig{},
 			wantErr: true,
 		},
 		{
