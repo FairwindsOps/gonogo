@@ -17,38 +17,43 @@ package cmd
 
 import (
 	"fmt"
+	"log"
+
+	"github.com/spf13/cobra"
 
 	"github.com/fairwindsops/hall-monitor/pkg/helm"
-	"github.com/spf13/cobra"
+
+	"github.com/davecgh/go-spew/spew"
 )
 
-// helmListCmd represents the helmList command
-var helmListCmd = &cobra.Command{
-	Use:   "helmList",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+// getAddonsCmd represents the getAddons command
+var getAddonsCmd = &cobra.Command{
+	Use:   "getAddons",
+	Short: "List Helm charts",
+	Long:  `List deployed Helm charts from connected Kubernetes cluster`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("helmList called")
-		values := helm.NewHelm("default")
-		fmt.Println(values)
+		fmt.Println("getAddons called")
+		client := helm.NewHelm("")
+		err := client.GetReleasesVersionThree()
+		if err != nil {
+			log.Fatal(err)
+		}
+		for _, release := range client.Releases {
+			spew.Dump(release)
+		}
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(helmListCmd)
+	rootCmd.AddCommand(getAddonsCmd)
 
 	// Here you will define your flags and configuration settings.
 
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
-	// helmListCmd.PersistentFlags().String("foo", "", "A help for foo")
+	// getAddonsCmd.PersistentFlags().String("foo", "", "A help for foo")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	// helmListCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	// getAddonsCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
