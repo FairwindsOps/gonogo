@@ -22,8 +22,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/fairwindsops/hall-monitor/pkg/helm"
-
-	"github.com/davecgh/go-spew/spew"
 )
 
 // getAddonsCmd represents the getAddons command
@@ -39,7 +37,7 @@ var getAddonsCmd = &cobra.Command{
 			log.Fatal(err)
 		}
 		for _, release := range client.Releases {
-			spew.Dump(release)
+			fmt.Println(release.Name)
 		}
 	},
 }
