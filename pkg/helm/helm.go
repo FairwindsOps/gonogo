@@ -1,4 +1,4 @@
-// Copyright 2021 Fairwinds
+// Copyright 2021 FairwindsOps, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -111,7 +111,7 @@ func helmToRelease(helmRelease interface{}) (*Release, error) {
 	return marshalToRelease(jsonRel)
 }
 
-// marshalToRelease marshals release data into the Pluto Release type so we have a common type regardless of helm version
+// marshalToRelease marshals release data into the local Release type so we have a common type regardless of helm version
 func marshalToRelease(jsonRel []byte) (*Release, error) {
 	var ret = new(Release)
 	err := json.Unmarshal(jsonRel, ret)
