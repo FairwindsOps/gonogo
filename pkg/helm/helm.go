@@ -28,31 +28,13 @@ import (
 
 // Helm represents all current releases that we can find in the cluster
 type Helm struct {
-	Releases  []*Release
+	Releases  []*release.Release
 	Kube      *kube
 	Namespace string
 }
 
-// Release represents a single helm release
-type Release struct {
-	Name      string `json:"name"`
-	Namespace string `json:"namespace"`
-	Chart     *Chart `json:"chart"`
-	Manifest  string `json:"manifest"`
-}
 
-// Chart represents a single helm chart
-type Chart struct {
-	Metadata *ChartMeta `json:"metadata"`
-}
-
-// ChartMeta is the metadata of a Helm chart
-type ChartMeta struct {
-	Name    string `json:"name"`
-	Version string `json:"version"`
-}
-
-// NewHelm returns a basic helm struct with the version of helm requested
+// NewHelm returns a basic helm struct 
 func NewHelm(namespace string) *Helm {
 	return &Helm{
 		Kube:      getConfigInstance(),
@@ -103,7 +85,7 @@ func relNamespace(ns string) releaseutil.FilterFunc {
 	}
 }
 
-func helmToRelease(helmRelease interface{}) (*Release, error) {
+func helmToRelease(helmRelease interface{}) (*release.Release, error) {
 	jsonRel, err := json.Marshal(helmRelease)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling release: %s", err.Error())
@@ -112,8 +94,8 @@ func helmToRelease(helmRelease interface{}) (*Release, error) {
 }
 
 // marshalToRelease marshals release data into the local Release type so we have a common type regardless of helm version
-func marshalToRelease(jsonRel []byte) (*Release, error) {
-	var ret = new(Release)
+func marshalToRelease(jsonRel []byte) (*release.Release, error) {
+	var ret = new(release.Release)
 	err := json.Unmarshal(jsonRel, ret)
 	return ret, err
 }
