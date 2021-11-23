@@ -38,7 +38,7 @@ var checkCmd = &cobra.Command{
 
 		// Match is a helm release and the bundle config that corresponds to it.
 		type match struct {
-			Bundle  bundle.Bundle
+			Bundle  *bundle.Bundle
 			Release *release.Release
 		}
 
