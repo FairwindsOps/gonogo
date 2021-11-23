@@ -1,11 +1,11 @@
 addons:
-- name: external-dns
+- name: metrics-server
   versions:
     start: 1.1.0
     end: 1.2.0
   notes: A text field with general notes
   source:
-    chart: external-dns
+    chart: metrics-server
     repository: https://charts.bitnami.com/bitnami
   warnings: 
   - "warning 1"

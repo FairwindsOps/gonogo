@@ -64,6 +64,5 @@ func ReadConfig(file string) (*BundleConfig, error) {
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse yaml file: %v", err)
 	}
-
 	return bundleconfig, nil
 }
