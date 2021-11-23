@@ -1,5 +1,5 @@
 addons:
-- name: metrics-server
+- name: metrics-server 
   versions:
     start: 1.1.0
     end: 1.2.0
@@ -7,6 +7,28 @@ addons:
   source:
     chart: metrics-server
     repository: https://charts.bitnami.com/bitnami
+  warnings: 
+  - "warning 1"
+  - "warning 2"
+  compatible_k8s_versions:
+  - 1.20
+  - 1.18
+  necessary_api_versions:
+  - apps/v1
+  - core/v1
+  values_schema: ""
+  opa_checks:
+  - Type From the existing OPA Package 
+  - OPACustomCheck 
+  - Handle resources
+- name: goldilocks 
+  versions:
+    start: 1.1.0
+    end: 1.2.0
+  notes: A text field with general notes
+  source:
+    chart: goldilocks
+    repository: https://charts.fairwinds.com/stable
   warnings: 
   - "warning 1"
   - "warning 2"
