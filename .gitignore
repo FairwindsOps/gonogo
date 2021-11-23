@@ -16,3 +16,6 @@
 
 # Won't check in the built binary when go build is ran
 /hall-monitor
+
+#ignore test files
+launch.json
