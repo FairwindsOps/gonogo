@@ -21,22 +21,42 @@ import (
 	"os"
 
 	"github.com/fairwindsops/hall-monitor/pkg/bundle"
+	"github.com/fairwindsops/hall-monitor/pkg/helm"
 	"github.com/spf13/cobra"
 )
 
-// readSpecFileCmd represents the readSpecFile command
-var readSpecFileCmd = &cobra.Command{
-	Use:     "read [file to process]",
-	Short:   "Parse file",
-	Long:    `Provide file that adheres to the bundle spec for parsing`,
+var checkCmd = &cobra.Command{
+	Use:     "check [path to Bundle config file]",
+	Short:   "Check for Helm releases that can be updated",
+	Long:    `Check for Helm releases that can be updated`,
 	PreRunE: validateArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("Reading spec %s\n", args[0])
+		matches := 0
 		config, err := bundle.ReadConfig(args[0])
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Printf("%v\n", config)
+		client := helm.NewHelm("")
+		err = client.GetReleasesVersionThree()
+		if err != nil {
+			log.Fatal(err)
+		}
+		for _, release := range client.Releases {
+			for _, bundle := range config.Addons {
+				if bundle.Name == release.Chart.Metadata.Name {
+					matches++
+					if matches < 1 {
+						fmt.Printf("No releases that are covered by config found in cluster.\n", matches)
+					} else if matches == 1 && matches > 0 {
+						fmt.Printf("Found %d release in cluster that is covered by config:\n", matches)
+						fmt.Printf("%s\n", bundle.Name)
+					} else {
+						fmt.Printf("Found %d releases in cluster that are covered by config:\n", matches)
+						fmt.Printf("%s\n", bundle.Name)
+					}
+				}
+			}
+		}
 	},
 }
 
@@ -53,5 +73,5 @@ func validateArgs(cmd *cobra.Command, args []string) error {
 }
 
 func init() {
-	rootCmd.AddCommand(readSpecFileCmd)
+	rootCmd.AddCommand(checkCmd)
 }
