@@ -1,8 +1,8 @@
 addons:
 - name: metrics-server 
   versions:
-    start: 1.1.0
-    end: 1.2.0
+    start: 5.10.2
+    end: 5.10.10
   notes: A text field with general notes
   source:
     chart: metrics-server

@@ -27,6 +27,8 @@ import (
 	"github.com/thoas/go-funk"
 	"helm.sh/helm/v3/pkg/release"
 	"k8s.io/klog"
+
+	"github.com/blang/semver/v4"
 )
 
 var checkCmd = &cobra.Command{
@@ -60,10 +62,27 @@ var checkCmd = &cobra.Command{
 		for _, release := range client.Releases {
 			for _, bundle := range config.Addons {
 				if bundle.Source.Chart == release.Chart.Metadata.Name {
-					klog.V(3).Infof("Found match for chart %s in release %s", bundle.Name, release.Name)
-					finalMatches[release.Chart.Metadata.Name] = match{
-						Bundle:  bundle,
-						Release: release,
+
+					// comparison := semver.Compare(release.Chart.Metadata.Version, bundle.Versions.Start)
+					v, err := semver.Make(release.Chart.Metadata.Version)
+					if err != nil {
+						log.Fatal(err)
+					}
+					vStart, err := semver.Make(bundle.Versions.Start)
+					if err != nil {
+						log.Fatal(err)
+					}
+					vEnd, err := semver.Make(bundle.Versions.End)
+					if err != nil {
+						log.Fatal(err)
+					}
+
+					if v.GTE(vStart) && v.LTE(vEnd) {
+						klog.V(3).Infof("Found match for chart %s in release %s", bundle.Name, release.Name)
+						finalMatches[release.Chart.Metadata.Name] = match{
+							Bundle:  bundle,
+							Release: release,
+						}
 					}
 				}
 			}
