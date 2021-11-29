@@ -33,7 +33,7 @@ func TestReadConfig(t *testing.T) {
 			name: "bundle1",
 			file: "testdata/bundle1.yaml",
 			want: &BundleConfig{
-				Addons: []Bundle{
+				Addons: []*Bundle{
 					{
 						Name:                  "metrics-server",
 						Versions:              Versions{"1.1.0", "1.2.0"},
@@ -50,9 +50,9 @@ func TestReadConfig(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "file is not valid syntax",
-			file: "testdata/invalid_bundle.yaml",
-			want: &BundleConfig{},
+			name:    "file is not valid syntax",
+			file:    "testdata/invalid_bundle.yaml",
+			want:    &BundleConfig{},
 			wantErr: true,
 		},
 		{

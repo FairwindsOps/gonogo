@@ -20,9 +20,13 @@ import (
 	"log"
 	"os"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/fairwindsops/hall-monitor/pkg/bundle"
 	"github.com/fairwindsops/hall-monitor/pkg/helm"
 	"github.com/spf13/cobra"
+	"github.com/thoas/go-funk"
+	"helm.sh/helm/v3/pkg/release"
+	"k8s.io/klog"
 )
 
 var checkCmd = &cobra.Command{
@@ -31,7 +35,19 @@ var checkCmd = &cobra.Command{
 	Long:    `Check for Helm releases that can be updated`,
 	PreRunE: validateArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		matches := 0
+
+		// Match is a helm release and the bundle config that corresponds to it.
+		type match struct {
+			Bundle  *bundle.Bundle
+			Release *release.Release
+		}
+
+		// matches is a map of matched bundles+releases where the key is the release name
+		type matches map[string]match
+
+		// finalMatches is the map that we use to store matches when we find them
+		finalMatches := matches{}
+
 		config, err := bundle.ReadConfig(args[0])
 		if err != nil {
 			log.Fatal(err)
@@ -43,20 +59,32 @@ var checkCmd = &cobra.Command{
 		}
 		for _, release := range client.Releases {
 			for _, bundle := range config.Addons {
-				if bundle.Name == release.Chart.Metadata.Name {
-					matches++
-					if matches < 1 {
-						fmt.Printf("No releases that are covered by config found in cluster.\n", matches)
-					} else if matches == 1 && matches > 0 {
-						fmt.Printf("Found %d release in cluster that is covered by config:\n", matches)
-						fmt.Printf("%s\n", bundle.Name)
-					} else {
-						fmt.Printf("Found %d releases in cluster that are covered by config:\n", matches)
-						fmt.Printf("%s\n", bundle.Name)
+				if bundle.Source.Chart == release.Chart.Metadata.Name {
+					klog.V(3).Infof("Found match for chart %s in release %s", bundle.Name, release.Name)
+					finalMatches[release.Chart.Metadata.Name] = match{
+						Bundle:  bundle,
+						Release: release,
 					}
 				}
 			}
 		}
+
+		if len(finalMatches) < 1 {
+			fmt.Println("No helm releases matched the bundle config.")
+		} else {
+			fmt.Printf("Releases that matched the config: %v\n", funk.Keys(finalMatches))
+		}
+
+		for _, match := range finalMatches {
+			// TODO: Check all the things in the "match"
+			// 1st, run opa
+			// 2nd, run something else
+			// 3rd , generate action items
+			if klog.V(10) {
+				spew.Dump(match)
+			}
+		}
+
 	},
 }
 

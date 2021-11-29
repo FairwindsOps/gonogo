@@ -34,7 +34,7 @@ type Versions struct {
 }
 
 type BundleConfig struct {
-	Addons []Bundle `yaml:"addons"`
+	Addons []*Bundle `yaml:"addons"`
 }
 
 type Bundle struct {
