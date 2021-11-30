@@ -63,7 +63,6 @@ var checkCmd = &cobra.Command{
 			for _, bundle := range config.Addons {
 				if bundle.Source.Chart == release.Chart.Metadata.Name {
 
-					// comparison := semver.Compare(release.Chart.Metadata.Version, bundle.Versions.Start)
 					v, err := semver.Make(release.Chart.Metadata.Version)
 					if err != nil {
 						log.Fatal(err)
