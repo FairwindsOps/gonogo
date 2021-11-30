@@ -63,26 +63,25 @@ var checkCmd = &cobra.Command{
 			for _, bundle := range config.Addons {
 				if bundle.Source.Chart == release.Chart.Metadata.Name {
 
-					// comparison := semver.Compare(release.Chart.Metadata.Version, bundle.Versions.Start)
 					v, err := semver.Make(release.Chart.Metadata.Version)
 					if err != nil {
-						log.Fatal(err)
+						klog.Error(err)
 						continue
 					}
 					vStart, err := semver.Make(bundle.Versions.Start)
 					if err != nil {
-						log.Fatal(err)
+						klog.Error(err)
 						continue
 					}
 					vEnd, err := semver.Make(bundle.Versions.End)
 					if err != nil {
-						log.Fatal(err)
+						klog.Error(err)
 						continue
 					}
 
 					if v.GTE(vStart) && v.LTE(vEnd) {
 						klog.V(3).Infof("Found match for chart %s in release %s", bundle.Name, release.Name)
-						finalMatches[release.Chart.Metadata.Name] = match{
+						finalMatches[fmt.Sprintf("%s/%s", release.Namespace, release.Name)] = match{
 							Bundle:  bundle,
 							Release: release,
 						}
