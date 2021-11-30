@@ -81,7 +81,7 @@ var checkCmd = &cobra.Command{
 
 					if v.GTE(vStart) && v.LTE(vEnd) {
 						klog.V(3).Infof("Found match for chart %s in release %s", bundle.Name, release.Name)
-						finalMatches[release.Chart.Metadata.Name] = match{
+						finalMatches[fmt.Sprintf("%s/%s", release.Namespace, release.Name)] = match{
 							Bundle:  bundle,
 							Release: release,
 						}
