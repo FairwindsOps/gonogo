@@ -65,15 +65,18 @@ var checkCmd = &cobra.Command{
 
 					v, err := semver.Make(release.Chart.Metadata.Version)
 					if err != nil {
-						log.Fatal(err)
+						klog.Error(err)
+						continue
 					}
 					vStart, err := semver.Make(bundle.Versions.Start)
 					if err != nil {
-						log.Fatal(err)
+						klog.Error(err)
+						continue
 					}
 					vEnd, err := semver.Make(bundle.Versions.End)
 					if err != nil {
-						log.Fatal(err)
+						klog.Error(err)
+						continue
 					}
 
 					if v.GTE(vStart) && v.LTE(vEnd) {
