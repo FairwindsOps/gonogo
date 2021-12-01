@@ -33,12 +33,12 @@ func TestReadConfig(t *testing.T) {
 			name: "bundle1",
 			file: "testdata/bundle1.yaml",
 			want: &BundleConfig{
-				Addons: []Bundle{
+				Addons: []*Bundle{
 					{
-						Name:                  "external-dns",
+						Name:                  "metrics-server",
 						Versions:              Versions{"1.1.0", "1.2.0"},
 						Notes:                 "A text field with general notes",
-						Source:                Source{"external-dns", "https://charts.bitnami.com/bitnami"},
+						Source:                Source{"metrics-server", "https://charts.bitnami.com/bitnami"},
 						Warnings:              []string{"warning 1", "warning 2"},
 						CompatibleK8SVersions: []string{"1.20", "1.18"},
 						NecessaryAPIVersions:  []string{"apps/v1", "core/v1"},
@@ -50,9 +50,9 @@ func TestReadConfig(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "file is not valid syntax",
-			file: "testdata/invalid_bundle.yaml",
-			want: &BundleConfig{},
+			name:    "file is not valid syntax",
+			file:    "testdata/invalid_bundle.yaml",
+			want:    &BundleConfig{},
 			wantErr: true,
 		},
 		{
