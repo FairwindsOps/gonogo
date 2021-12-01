@@ -19,15 +19,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/davecgh/go-spew/spew"
-	"github.com/fairwindsops/hall-monitor/pkg/bundle"
-	"github.com/fairwindsops/hall-monitor/pkg/helm"
 	"github.com/spf13/cobra"
-	"github.com/thoas/go-funk"
-	"helm.sh/helm/v3/pkg/release"
-	"k8s.io/klog"
 
-	"github.com/blang/semver/v4"
+	"github.com/fairwindsops/hall-monitor/pkg/validate"
 )
 
 var checkCmd = &cobra.Command{
@@ -36,76 +30,13 @@ var checkCmd = &cobra.Command{
 	Long:    `Check for Helm releases that can be updated`,
 	PreRunE: validateArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-
-		// Match is a helm release and the bundle config that corresponds to it.
-		type match struct {
-			Bundle  *bundle.Bundle
-			Release *release.Release
-		}
-
-		// matches is a map of matched bundles+releases where the key is the release name
-		type matches map[string]match
-
-		// finalMatches is the map that we use to store matches when we find them
-		finalMatches := matches{}
-
-		config, err := bundle.ReadConfig(args[0])
-		if err != nil {
-			klog.Fatal(err)
-		}
-		client := helm.NewHelm("")
-		err = client.GetReleasesVersionThree()
-		if err != nil {
-			klog.Fatal(err)
-		}
-		for _, release := range client.Releases {
-			for _, bundle := range config.Addons {
-				if bundle.Source.Chart == release.Chart.Metadata.Name {
-
-					v, err := semver.Make(release.Chart.Metadata.Version)
-					if err != nil {
-						klog.Error(err)
-						continue
-					}
-					vStart, err := semver.Make(bundle.Versions.Start)
-					if err != nil {
-						klog.Error(err)
-						continue
-					}
-					vEnd, err := semver.Make(bundle.Versions.End)
-					if err != nil {
-						klog.Error(err)
-						continue
-					}
-
-					if v.GTE(vStart) && v.LTE(vEnd) {
-						klog.V(3).Infof("Found match for chart %s in release %s", bundle.Name, release.Name)
-						finalMatches[fmt.Sprintf("%s/%s", release.Namespace, release.Name)] = match{
-							Bundle:  bundle,
-							Release: release,
-						}
-					}
-				}
-			}
-		}
-
-		if len(finalMatches) < 1 {
-			fmt.Println("No helm releases matched the bundle config.")
-		} else {
-			fmt.Printf("Releases that matched the config: %v\n", funk.Keys(finalMatches))
-		}
-
-		for _, match := range finalMatches {
-			// TODO: Check all the things in the "match"
-			// 1st, run opa
-			// 2nd, run something else
-			// 3rd , generate action items
-			if klog.V(10) {
-				spew.Dump(match)
-			}
-		}
+		validate.Validate(args[0])
 
 	},
+}
+
+func init() {
+	rootCmd.AddCommand(checkCmd)
 }
 
 func validateArgs(cmd *cobra.Command, args []string) error {
@@ -118,8 +49,4 @@ func validateArgs(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("spec file %s does not exist", args[0])
 	}
 	return err
-}
-
-func init() {
-	rootCmd.AddCommand(checkCmd)
 }
