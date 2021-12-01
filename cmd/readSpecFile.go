@@ -57,7 +57,7 @@ var checkCmd = &cobra.Command{
 		client := helm.NewHelm("")
 		err = client.GetReleasesVersionThree()
 		if err != nil {
-			log.Fatal(err)
+			klog.Fatal(err)
 		}
 		for _, release := range client.Releases {
 			for _, bundle := range config.Addons {
