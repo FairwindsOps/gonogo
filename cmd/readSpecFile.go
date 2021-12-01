@@ -52,7 +52,7 @@ var checkCmd = &cobra.Command{
 
 		config, err := bundle.ReadConfig(args[0])
 		if err != nil {
-			log.Fatal(err)
+			klog.Fatal(err)
 		}
 		client := helm.NewHelm("")
 		err = client.GetReleasesVersionThree()
