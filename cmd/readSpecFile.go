@@ -17,7 +17,6 @@ package cmd
 
 import (
 	"fmt"
-	"log"
 	"os"
 
 	"github.com/davecgh/go-spew/spew"
@@ -52,12 +51,12 @@ var checkCmd = &cobra.Command{
 
 		config, err := bundle.ReadConfig(args[0])
 		if err != nil {
-			log.Fatal(err)
+			klog.Fatal(err)
 		}
 		client := helm.NewHelm("")
 		err = client.GetReleasesVersionThree()
 		if err != nil {
-			log.Fatal(err)
+			klog.Fatal(err)
 		}
 		for _, release := range client.Releases {
 			for _, bundle := range config.Addons {
