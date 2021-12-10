@@ -83,29 +83,36 @@ func Validate(b string) error {
 		var chartSchema = *match.Release.Chart
 		var userValues = match.Release.Config
 
+		v, err := chartutil.CoalesceValues(&chartSchema, userValues)
+		if err != nil {
+			return err
+		}
+
+		fmt.Printf("The combined values are: %v\n", v)
+
 		if len(userValues) < 1 {
 			fmt.Printf("No user values specified for release %v/%v", match.Release.Namespace, match.Release.Name)
 			return nil
 		}
 
 		if len(bundleSchema.ValuesSchema) > 0 {
-			fmt.Println("There is a bundle schema.")
 			j, err := json.Marshal(bundleSchema.ValuesSchema)
-			fmt.Printf("This is the values schema: %v\n", bundleSchema.ValuesSchema)
 			if err != nil {
 				fmt.Println("error:", err)
 			}
-			err = chartutil.ValidateAgainstSingleSchema(userValues, j)
+			err = chartutil.ValidateAgainstSingleSchema(v, j)
 			if err != nil {
-				fmt.Println(err)
+				return err
 			}
+
+			fmt.Printf("The schema is valid")
 		}
 
-		// retrieve new version of chart from end version in bundle
-		err := chartutil.ValidateAgainstSchema(&chartSchema, userValues)
-		if err != nil {
-			return err
-		}
+		// // retrieve new version of chart from end version in bundle
+		// err := chartutil.ValidateAgainstSchema(&chartSchema, userValues)
+		// if err != nil {
+		// 	return err
+		// }
 
 		// 	/* this was code checking for in-cluster schema that is no longer required because we're checking upstream
 		// 	if len(chartSchema.Schema) < 1 {
