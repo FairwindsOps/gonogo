@@ -1,12 +1,15 @@
 package validate
 
 import (
+	"encoding/json"
 	"fmt"
 
-	"github.com/davecgh/go-spew/spew"
+	_ "github.com/davecgh/go-spew/spew"
 	"github.com/fairwindsops/hall-monitor/pkg/bundle"
 	"github.com/fairwindsops/hall-monitor/pkg/helm"
 	"github.com/thoas/go-funk"
+	_ "helm.sh/helm/v3/pkg/chart"
+	"helm.sh/helm/v3/pkg/chartutil"
 	"helm.sh/helm/v3/pkg/release"
 	"k8s.io/klog"
 
@@ -22,10 +25,9 @@ type match struct {
 // matches is a map of matched bundles+releases where the key is the release name
 type matches map[string]match
 
-func Validate(b string) error {
+func getMatch(b string) map[string]match {
 	// finalMatches is the map that we use to store matches when we find them
 	finalMatches := matches{}
-
 	config, err := bundle.ReadConfig(b)
 	if err != nil {
 		klog.Fatal(err)
@@ -71,15 +73,58 @@ func Validate(b string) error {
 	} else {
 		fmt.Printf("Releases that matched the config: %v\n", funk.Keys(finalMatches))
 	}
+	return finalMatches
+}
 
-	for _, match := range finalMatches {
-		// TODO: Check all the things in the "match"
-		// 1st, run opa
-		// 2nd, run something else
-		// 3rd , generate action items
-		if klog.V(10) {
-			spew.Dump(match)
+func Validate(b string) error {
+	m := getMatch(b)
+	for _, match := range m {
+		var bundleSchema = *match.Bundle
+		var chartSchema = *match.Release.Chart
+		var userValues = match.Release.Config
+
+		if len(userValues) < 1 {
+			fmt.Printf("No user values specified for release %v/%v", match.Release.Namespace, match.Release.Name)
+			return nil
 		}
+
+		if len(bundleSchema.ValuesSchema) > 0 {
+			fmt.Println("There is a bundle schema.")
+			j, err := json.Marshal(bundleSchema.ValuesSchema)
+			fmt.Printf("This is the values schema: %v\n", bundleSchema.ValuesSchema)
+			if err != nil {
+				fmt.Println("error:", err)
+			}
+			err = chartutil.ValidateAgainstSingleSchema(userValues, j)
+			if err != nil {
+				fmt.Println(err)
+			}
+		}
+
+		// retrieve new version of chart from end version in bundle
+		err := chartutil.ValidateAgainstSchema(&chartSchema, userValues)
+		if err != nil {
+			return err
+		}
+
+		// 	/* this was code checking for in-cluster schema that is no longer required because we're checking upstream
+		// 	if len(chartSchema.Schema) < 1 {
+		// 		fmt.Printf("No schema.json.values provided for %v/%v\n", match.Release.Namespace, match.Release.Name)
+		// 	}
+		// 	*/
+
+		// 	if len(bundleSchema.ValuesSchema) < 1 {
+		// 		fmt.Printf("No values schema provided with bundle config.\n")
+		// 	}
+
+		// 	// TODO: Check all the things in the "match"
+		// 	// 1st, run opa
+		// 	// 2nd, run something else
+		// 	// 3rd , generate action items
+		// 	if klog.V(10) {
+		// 		spew.Dump(match)
+		// 	}
+		// }
 	}
 	return nil
 }
