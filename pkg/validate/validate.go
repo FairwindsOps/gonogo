@@ -108,21 +108,11 @@ func Validate(b string) error {
 			fmt.Printf("The schema is valid")
 		}
 
-		// // retrieve new version of chart from end version in bundle
+		// retrieve new version of chart from end version in bundle
 		// err := chartutil.ValidateAgainstSchema(&chartSchema, userValues)
 		// if err != nil {
 		// 	return err
 		// }
-
-		// 	/* this was code checking for in-cluster schema that is no longer required because we're checking upstream
-		// 	if len(chartSchema.Schema) < 1 {
-		// 		fmt.Printf("No schema.json.values provided for %v/%v\n", match.Release.Namespace, match.Release.Name)
-		// 	}
-		// 	*/
-
-		// 	if len(bundleSchema.ValuesSchema) < 1 {
-		// 		fmt.Printf("No values schema provided with bundle config.\n")
-		// 	}
 
 		// 	// TODO: Check all the things in the "match"
 		// 	// 1st, run opa
