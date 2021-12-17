@@ -1,7 +1,6 @@
 package validate
 
 import (
-	"encoding/json"
 	"fmt"
 
 	_ "github.com/davecgh/go-spew/spew"
@@ -79,49 +78,53 @@ func getMatch(b string) map[string]match {
 func Validate(b string) error {
 	m := getMatch(b)
 	for _, match := range m {
-		var bundleSchema = *match.Bundle
-		var chartSchema = *match.Release.Chart
-		var userValues = match.Release.Config
 
-		v, err := chartutil.CoalesceValues(&chartSchema, userValues)
-		if err != nil {
-			return err
-		}
-
-		fmt.Printf("The combined values are: %v\n", v)
-
-		if len(userValues) < 1 {
+		if len(match.Release.Config) < 1 {
 			fmt.Printf("No user values specified for release %v/%v", match.Release.Namespace, match.Release.Name)
-			return nil
+			continue
 		}
 
-		if len(bundleSchema.ValuesSchema) > 0 {
-			j, err := json.Marshal(bundleSchema.ValuesSchema)
-			if err != nil {
-				fmt.Println("error:", err)
-			}
-			err = chartutil.ValidateAgainstSingleSchema(v, j)
-			if err != nil {
-				return err
-			}
-
-			fmt.Printf("The schema is valid")
+		cv, err := chartutil.CoalesceValues(match.Release.Chart, match.Release.Config)
+		if err != nil {
+			klog.Error(err)
+			continue
 		}
 
-		// retrieve new version of chart from end version in bundle
-		// err := chartutil.ValidateAgainstSchema(&chartSchema, userValues)
-		// if err != nil {
-		// 	return err
-		// }
-
-		// 	// TODO: Check all the things in the "match"
-		// 	// 1st, run opa
-		// 	// 2nd, run something else
-		// 	// 3rd , generate action items
-		// 	if klog.V(10) {
-		// 		spew.Dump(match)
-		// 	}
-		// }
+		if len(match.Bundle.ValuesSchema) > 0 {
+			err := chartutil.ValidateAgainstSchema(match.Release.Chart, cv)
+			if err != nil {
+				klog.Error(err)
+				continue
+			}
+			fmt.Printf("Schema validation passed for release %v\n", match.Release.Name)
+		} else {
+			fmt.Printf("No schema provided for %v/%v\n", match.Release.Namespace, match.Release.Name)
+		}
 	}
 	return nil
 }
+
+// retrieve new version of chart from end version in bundle
+// retrieve index.yaml from the repository field in the source struct
+// resp, err := http.Get("https://charts.bitnami.com/bitnami/index.yaml")
+// if err != nil {
+// 	klog.Error(err)
+// }
+// fmt.Println(resp)
+// parse that index yaml for the url that matches the chart name
+// and also matches the end version from the bundle yaml
+// grab the tarball from that location and look for a json schema file in it
+// if it exists, save it as a chart schema and do the comparison
+// err := chartutil.ValidateAgainstSchema(&chartSchema, userValues)
+// if err != nil {
+// 	return err
+// }
+
+// 	// TODO: Check all the things in the "match"
+// 	// 1st, run opa
+// 	// 2nd, run something else
+// 	// 3rd , generate action items
+// 	if klog.V(10) {
+// 		spew.Dump(match)
+// 	}
+// }
