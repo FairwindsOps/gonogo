@@ -85,13 +85,15 @@ func Validate(b string) error {
 		}
 
 		cv, err := chartutil.CoalesceValues(match.Release.Chart, match.Release.Config)
+
 		if err != nil {
 			klog.Error(err)
 			continue
 		}
 
 		if len(match.Bundle.ValuesSchema) > 0 {
-			err := chartutil.ValidateAgainstSchema(match.Release.Chart, cv)
+			vs := []byte(match.Bundle.ValuesSchema)
+			err := chartutil.ValidateAgainstSingleSchema(cv, vs)
 			if err != nil {
 				klog.Error(err)
 				continue
