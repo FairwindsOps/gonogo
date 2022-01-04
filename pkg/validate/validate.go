@@ -1,6 +1,7 @@
 package validate
 
 import (
+	"encoding/json"
 	"fmt"
 
 	_ "github.com/davecgh/go-spew/spew"
@@ -93,16 +94,22 @@ func Validate(b string) error {
 
 		if len(match.Bundle.ValuesSchema) > 0 {
 			vs := []byte(match.Bundle.ValuesSchema)
-			err := chartutil.ValidateAgainstSingleSchema(cv, vs)
-			if err != nil {
-				klog.Error(err)
-				continue
+			switch json.Valid(vs) {
+				case true:
+					err := chartutil.ValidateAgainstSingleSchema(cv, vs)
+					if err != nil {
+						klog.Error(err)
+						continue
+					}
+					fmt.Printf("schema validation passed for release %v\n", match.Release.Name)
+				case false:
+					fmt.Println("invalid json schema")
+				}
+			
+			} else {
+				fmt.Printf("no schema provided for %v/%v\n", match.Release.Namespace, match.Release.Name)
 			}
-			fmt.Printf("Schema validation passed for release %v\n", match.Release.Name)
-		} else {
-			fmt.Printf("No schema provided for %v/%v\n", match.Release.Namespace, match.Release.Name)
 		}
-	}
 	return nil
 }
 
