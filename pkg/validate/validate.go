@@ -1,8 +1,14 @@
 package validate
 
 import (
+	"archive/tar"
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
+	"os"
+	"time"
 
 	_ "github.com/davecgh/go-spew/spew"
 	"github.com/fairwindsops/hall-monitor/pkg/bundle"
@@ -86,7 +92,6 @@ func Validate(b string) error {
 		}
 
 		cv, err := chartutil.CoalesceValues(match.Release.Chart, match.Release.Config)
-
 		if err != nil {
 			klog.Error(err)
 			continue
@@ -95,45 +100,84 @@ func Validate(b string) error {
 		if len(match.Bundle.ValuesSchema) > 0 {
 			vs := []byte(match.Bundle.ValuesSchema)
 			switch json.Valid(vs) {
-				case true:
-					err := chartutil.ValidateAgainstSingleSchema(cv, vs)
-					if err != nil {
-						klog.Error(err)
-						continue
-					}
-					fmt.Printf("schema validation passed for release %v\n", match.Release.Name)
-				case false:
-					fmt.Println("invalid json schema")
+			case true:
+				err := chartutil.ValidateAgainstSingleSchema(cv, vs)
+				if err != nil {
+					klog.Error(err)
+					continue
 				}
-			
-			} else {
-				fmt.Printf("no schema provided for %v/%v\n", match.Release.Namespace, match.Release.Name)
+				fmt.Printf("schema validation passed for release %v\n", match.Release.Name)
+			case false:
+				fmt.Println("invalid json schema")
 			}
+			continue
+
+			// } else {
+			// 	fmt.Printf("no schema provided for %v/%v\n", match.Release.Namespace, match.Release.Name)
+			// }
 		}
+
+		up := fmt.Sprintf("Checking upstream of %v for schema json", match.Release.Name)
+		fmt.Println(up)
+		repoSchema, err := fetchChart(match.Bundle.Source.Repository, match.Bundle.Versions.End, match.Bundle.Source.Chart)
+		if err != nil {
+			klog.Error(err)
+			continue
+		}
+
+		msg := fmt.Sprintf("Here it is! %v", repoSchema)
+		fmt.Println(msg)
+
+	}
+
 	return nil
 }
 
-// retrieve new version of chart from end version in bundle
-// retrieve index.yaml from the repository field in the source struct
-// resp, err := http.Get("https://charts.bitnami.com/bitnami/index.yaml")
-// if err != nil {
-// 	klog.Error(err)
-// }
-// fmt.Println(resp)
-// parse that index yaml for the url that matches the chart name
-// and also matches the end version from the bundle yaml
-// grab the tarball from that location and look for a json schema file in it
-// if it exists, save it as a chart schema and do the comparison
-// err := chartutil.ValidateAgainstSchema(&chartSchema, userValues)
-// if err != nil {
-// 	return err
-// }
+func fetchChart(repo, version, chart string) (string, error) {
+	u := fmt.Sprintf("%v/%v-%v.tgz", repo, chart, version)
+	targetFilePath := fmt.Sprintf("/tmp/%v-%v.json", chart, version)
 
-// 	// TODO: Check all the things in the "match"
-// 	// 1st, run opa
-// 	// 2nd, run something else
-// 	// 3rd , generate action items
-// 	if klog.V(10) {
-// 		spew.Dump(match)
-// 	}
-// }
+	var report string
+
+	httpClient := http.Client{
+		Timeout: 5 * time.Second,
+	}
+
+	req, err := http.NewRequest("GET", u, nil)
+	if err != nil {
+		klog.Error(err)
+	}
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		klog.Error(err)
+	}
+
+	uncompressedStream, err := gzip.NewReader(resp.Body)
+	if err != nil {
+		klog.Error(err)
+	}
+
+	tarReader := tar.NewReader(uncompressedStream)
+
+	for true {
+		header, err := tarReader.Next()
+		if err == io.EOF {
+			break
+		}
+
+		if header.Name == fmt.Sprintf("%v/values.schema.json", chart) {
+			data, err := os.ReadFile(targetFilePath)
+			datastring := string(data)
+			msg := fmt.Sprintf("Found file %v", targetFilePath)
+			fmt.Println(msg)
+
+			if err != nil {
+				klog.Error(err)
+			}
+
+			report = datastring
+		}
+	}
+	return report, nil
+}
