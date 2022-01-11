@@ -108,36 +108,40 @@ func Validate(b string) error {
 				}
 				fmt.Printf("schema validation passed for release %v\n", match.Release.Name)
 			case false:
-				fmt.Println("invalid json schema")
+				fmt.Printf("invalid json schema for release %v\n", match.Release.Name)
 			}
 			continue
-
-			// } else {
-			// 	fmt.Printf("no schema provided for %v/%v\n", match.Release.Namespace, match.Release.Name)
-			// }
 		}
 
-		up := fmt.Sprintf("Checking upstream of %v for schema json", match.Release.Name)
-		fmt.Println(up)
+		fmt.Printf("Checking upstream of %v for schema json\n", match.Release.Name)
 		repoSchema, err := fetchChart(match.Bundle.Source.Repository, match.Bundle.Versions.End, match.Bundle.Source.Chart)
 		if err != nil {
 			klog.Error(err)
 			continue
 		}
 
-		msg := fmt.Sprintf("Here it is! %v", repoSchema)
-		fmt.Println(msg)
+		if len(repoSchema) > 0 {
+			err := chartutil.ValidateAgainstSingleSchema(cv, repoSchema)
+			if err != nil {
+				klog.Error(err)
+				continue
+			}
+			fmt.Printf("schema validation passed for release %v\n", match.Release.Name)
+			continue
+		}
+
+		fmt.Printf("No schema found for release %v\n", match.Release.Name)
 
 	}
 
 	return nil
 }
 
-func fetchChart(repo, version, chart string) (string, error) {
+func fetchChart(repo, version, chart string) ([]byte, error) {
 	u := fmt.Sprintf("%v/%v-%v.tgz", repo, chart, version)
 	targetFilePath := fmt.Sprintf("/tmp/%v-%v.json", chart, version)
 
-	var report string
+	var data []byte
 
 	httpClient := http.Client{
 		Timeout: 5 * time.Second,
@@ -167,17 +171,14 @@ func fetchChart(repo, version, chart string) (string, error) {
 		}
 
 		if header.Name == fmt.Sprintf("%v/values.schema.json", chart) {
-			data, err := os.ReadFile(targetFilePath)
-			datastring := string(data)
-			msg := fmt.Sprintf("Found file %v", targetFilePath)
-			fmt.Println(msg)
+			data, err = os.ReadFile(targetFilePath)
+			// datastring := string(data)
+			fmt.Printf("Found file %v\n", targetFilePath)
 
 			if err != nil {
 				klog.Error(err)
 			}
-
-			report = datastring
 		}
 	}
-	return report, nil
+	return data, nil
 }
