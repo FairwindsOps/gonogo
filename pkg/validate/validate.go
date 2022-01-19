@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"time"
 
 	_ "github.com/davecgh/go-spew/spew"
@@ -87,7 +86,7 @@ func Validate(b string) error {
 	for _, match := range m {
 
 		if len(match.Release.Config) < 1 {
-			fmt.Printf("No user values specified for release %v/%v", match.Release.Namespace, match.Release.Name)
+			fmt.Printf("No user values specified for release %v/%v\n", match.Release.Namespace, match.Release.Name)
 			continue
 		}
 
@@ -103,7 +102,7 @@ func Validate(b string) error {
 			case true:
 				err := chartutil.ValidateAgainstSingleSchema(cv, vs)
 				if err != nil {
-					klog.Error(err)
+					klog.Error("validation failed for release ", match.Release.Namespace, "/", match.Release.Name, err)
 					continue
 				}
 				fmt.Printf("schema validation passed for release %v\n", match.Release.Name)
@@ -123,7 +122,7 @@ func Validate(b string) error {
 		if len(repoSchema) > 0 {
 			err := chartutil.ValidateAgainstSingleSchema(cv, repoSchema)
 			if err != nil {
-				klog.Error(err)
+				klog.Error("validation failed for release ", match.Release.Namespace, "/", match.Release.Name, err)
 				continue
 			}
 			fmt.Printf("schema validation passed for release %v\n", match.Release.Name)
@@ -139,9 +138,6 @@ func Validate(b string) error {
 
 func fetchChart(repo, version, chart string) ([]byte, error) {
 	u := fmt.Sprintf("%v/%v-%v.tgz", repo, chart, version)
-	targetFilePath := fmt.Sprintf("/tmp/%v-%v.json", chart, version)
-
-	var data []byte
 
 	httpClient := http.Client{
 		Timeout: 5 * time.Second,
@@ -149,36 +145,35 @@ func fetchChart(repo, version, chart string) ([]byte, error) {
 
 	req, err := http.NewRequest("GET", u, nil)
 	if err != nil {
-		klog.Error(err)
+		return nil, err
 	}
 
 	resp, err := httpClient.Do(req)
 	if err != nil {
-		klog.Error(err)
+		return nil, err
 	}
 
 	uncompressedStream, err := gzip.NewReader(resp.Body)
 	if err != nil {
-		klog.Error(err)
+		return nil, err
 	}
 
 	tarReader := tar.NewReader(uncompressedStream)
 
-	for true {
+	for {
 		header, err := tarReader.Next()
 		if err == io.EOF {
 			break
 		}
 
 		if header.Name == fmt.Sprintf("%v/values.schema.json", chart) {
-			data, err = os.ReadFile(targetFilePath)
-			// datastring := string(data)
-			fmt.Printf("Found file %v\n", targetFilePath)
-
+			d, err := io.ReadAll(tarReader)
 			if err != nil {
-				klog.Error(err)
+				return nil, err
 			}
+			klog.V(10).Infof("reading schema: %s", string(d))
+			return d, nil
 		}
 	}
-	return data, nil
+	return nil, fmt.Errorf("no values schema found")
 }
