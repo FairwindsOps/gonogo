@@ -175,5 +175,5 @@ func fetchChart(repo, version, chart string) ([]byte, error) {
 			return d, nil
 		}
 	}
-	return nil, fmt.Errorf("no values schema found")
+	return nil, fmt.Errorf("no values schema found for chart: %s:%s in repo: %s", chart, version, repo)
 }
