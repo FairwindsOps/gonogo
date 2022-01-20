@@ -171,7 +171,7 @@ func fetchChart(repo, version, chart string) ([]byte, error) {
 			if err != nil {
 				return nil, err
 			}
-			klog.V(10).Infof("reading schema: %s", string(d))
+			klog.V(10).Infof("found schema in upstream: %s", string(d))
 			return d, nil
 		}
 	}
