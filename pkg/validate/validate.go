@@ -21,7 +21,7 @@ import (
 	"github.com/blang/semver/v4"
 )
 
-// Match is a helm release and the bundle config that corresponds to it.
+// match is a helm release and the bundle config that corresponds to it.
 type match struct {
 	Bundle  *bundle.Bundle
 	Release *release.Release
