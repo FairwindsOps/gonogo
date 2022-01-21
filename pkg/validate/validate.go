@@ -86,7 +86,7 @@ func Validate(b string) error {
 	for _, match := range m {
 
 		if len(match.Release.Config) < 1 {
-			fmt.Printf("No user values specified for release %v/%v\n", match.Release.Namespace, match.Release.Name)
+			klog.Infof("no user values specified for release %s/%s", match.Release.Namespace, match.Release.Name)
 			continue
 		}
 
