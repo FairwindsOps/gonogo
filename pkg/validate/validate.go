@@ -129,7 +129,7 @@ func Validate(b string) error {
 			continue
 		}
 
-		fmt.Printf("No schema found for release %v\n", match.Release.Name)
+		klog.Infof("no schema found for release %v", match.Release.Name)
 
 	}
 
