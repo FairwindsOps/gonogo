@@ -125,7 +125,7 @@ func Validate(b string) error {
 				klog.Error("validation failed for release ", match.Release.Namespace, "/", match.Release.Name, err)
 				continue
 			}
-			fmt.Printf("schema validation passed for release %v\n", match.Release.Name)
+			klog.Infof("schema validation passed for release %s", match.Release.Name)
 			continue
 		}
 
