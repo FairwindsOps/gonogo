@@ -39,7 +39,7 @@ addons:
             }
           }
         }
-        }
+      }
   opa_checks:
   - Type From the existing OPA Package 
   - OPACustomCheck 
