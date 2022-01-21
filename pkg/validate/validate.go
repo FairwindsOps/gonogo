@@ -9,11 +9,9 @@ import (
 	"net/http"
 	"time"
 
-	_ "github.com/davecgh/go-spew/spew"
 	"github.com/fairwindsops/hall-monitor/pkg/bundle"
 	"github.com/fairwindsops/hall-monitor/pkg/helm"
 	"github.com/thoas/go-funk"
-	_ "helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/chartutil"
 	"helm.sh/helm/v3/pkg/release"
 	"k8s.io/klog"
@@ -74,15 +72,16 @@ func getMatch(b string) map[string]match {
 	}
 
 	if len(finalMatches) < 1 {
-		fmt.Println("No helm releases matched the bundle config.")
+		klog.Infof("no helm releases matched the bundle config.")
 	} else {
-		fmt.Printf("Releases that matched the config: %v\n", funk.Keys(finalMatches))
+		klog.Infof("releases that matched the config: %v\n", funk.Keys(finalMatches))
 	}
 	return finalMatches
 }
 
-func Validate(b string) error {
-	m := getMatch(b)
+// validate looks for schemas for found charts in the cluster and validates whether the charts values are valid in relation to the found schema
+func Validate(schema string) error {
+	m := getMatch(schema)
 	for _, match := range m {
 
 		if len(match.Release.Config) < 1 {
@@ -92,8 +91,7 @@ func Validate(b string) error {
 
 		cv, err := chartutil.CoalesceValues(match.Release.Chart, match.Release.Config)
 		if err != nil {
-			klog.Error(err)
-			continue
+			return err
 		}
 
 		if len(match.Bundle.ValuesSchema) > 0 {
@@ -112,8 +110,7 @@ func Validate(b string) error {
 			continue
 		}
 
-		fmt.Printf("Checking upstream of %v for schema json\n", match.Release.Name)
-		repoSchema, err := fetchChart(match.Bundle.Source.Repository, match.Bundle.Versions.End, match.Bundle.Source.Chart)
+		repoSchema, err := fetchJSONSchema(match.Bundle.Source.Repository, match.Bundle.Versions.End, match.Bundle.Source.Chart)
 		if err != nil {
 			klog.Error(err)
 			continue
@@ -136,11 +133,14 @@ func Validate(b string) error {
 	return nil
 }
 
-func fetchChart(repo, version, chart string) ([]byte, error) {
+// fetchJSONSchema will search a chart repo for the presence of a values.schema.json file and use it for schema validation if found
+func fetchJSONSchema(repo, version, chart string) ([]byte, error) {
+	klog.Infof("checking upstream of %s for schema json", chart)
+
 	u := fmt.Sprintf("%v/%v-%v.tgz", repo, chart, version)
 
 	httpClient := http.Client{
-		Timeout: 5 * time.Second,
+		Timeout: 30 * time.Second,
 	}
 
 	req, err := http.NewRequest("GET", u, nil)
@@ -164,6 +164,8 @@ func fetchChart(repo, version, chart string) ([]byte, error) {
 		header, err := tarReader.Next()
 		if err == io.EOF {
 			break
+		} else if err != nil {
+			return nil, err
 		}
 
 		if header.Name == fmt.Sprintf("%v/values.schema.json", chart) {
