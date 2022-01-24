@@ -33,8 +33,7 @@ type Helm struct {
 	Namespace string
 }
 
-
-// NewHelm returns a basic helm struct 
+// NewHelm returns a basic helm struct
 func NewHelm(namespace string) *Helm {
 	return &Helm{
 		Kube:      getConfigInstance(),

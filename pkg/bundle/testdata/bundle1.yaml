@@ -16,7 +16,30 @@ addons:
   necessary_api_versions:
   - apps/v1
   - core/v1
-  values_schema: ""
+  values_schema: |
+    {
+      "$schema": "http://json-schema.org/schema#",
+      "type": "object",
+      "properties": {
+        "image": {
+          "type": "object",
+          "required": [
+            "repository",
+            "pullPolicy"
+            ],
+            "properties": {
+              "repository": {
+                "type": "string",
+                "pattern": "^[a-z0-9]+"
+              },
+              "pullPolicy": {
+                "type": "string",
+                "pattern": "^(Always|Never|IfNotPresent)$"
+              }
+            }
+          }
+        }
+      }
   opa_checks:
   - Type From the existing OPA Package 
   - OPACustomCheck 
@@ -29,6 +52,50 @@ addons:
   source:
     chart: goldilocks
     repository: https://charts.fairwinds.com/stable
+  warnings: 
+  - "warning 1"
+  - "warning 2"
+  compatible_k8s_versions:
+  - 1.20
+  - 1.18
+  necessary_api_versions:
+  - apps/v1
+  - core/v1
+  values_schema: ""
+  opa_checks:
+  - Type From the existing OPA Package 
+  - OPACustomCheck 
+  - Handle resources
+- name: apache 
+  versions:
+    start: 8.5.11
+    end: 8.9.6
+  notes: A text field with general notes
+  source:
+    chart: apache
+    repository: https://charts.bitnami.com/bitnami
+  warnings: 
+  - "warning 1"
+  - "warning 2"
+  compatible_k8s_versions:
+  - 1.20
+  - 1.18
+  necessary_api_versions:
+  - apps/v1
+  - core/v1
+  values_schema: ""
+  opa_checks:
+  - Type From the existing OPA Package 
+  - OPACustomCheck 
+  - Handle resources
+- name: mysql 
+  versions:
+    start: 8.4.2
+    end: 8.8.13
+  notes: A text field with general notes
+  source:
+    chart: mysql
+    repository: https://charts.bitnami.com/bitnami
   warnings: 
   - "warning 1"
   - "warning 2"
