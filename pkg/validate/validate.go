@@ -31,7 +31,7 @@ type matches map[string]match
 
 // Validate expects a bundle config, finds matching releases in-cluster,
 // validates schema, and returns an error
-func Validate(bundle string) (Output, error) {
+func Validate(bundle string) (string, error) {
 
 	o := Output{}
 
@@ -43,7 +43,15 @@ func Validate(bundle string) (Output, error) {
 		}
 		o.Addons = append(o.Addons, match.AddonOutput)
 	}
-	return o, nil
+
+	out, err := json.Marshal(o)
+	if err != nil {
+		klog.Error(err)
+	}
+	
+	so := (string(out))
+	return so, err
+
 }
 
 // getMatch expects a bundle string which is used to find matching in-cluster releases
