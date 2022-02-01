@@ -31,10 +31,11 @@ var checkCmd = &cobra.Command{
 	Long:    `Check for Helm releases that can be updated`,
 	PreRunE: validateArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		err := validate.Validate(args[0])
+		out, err := validate.Validate(args[0])
 		if err != nil {
 			klog.Error(err)
 		}
+		fmt.Println(out)
 	},
 }
 

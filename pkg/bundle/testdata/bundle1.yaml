@@ -1,8 +1,9 @@
 addons:
+# tests for the bundle schema validation process; should return valid
 - name: metrics-server 
   versions:
     start: 5.10.2
-    end: 5.10.10
+    end: 5.10.14
   notes: A text field with general notes
   source:
     chart: metrics-server
@@ -34,7 +35,7 @@ addons:
               },
               "pullPolicy": {
                 "type": "string",
-                "pattern": "^(Always|Never|IfNotPresent)$"
+                "pattern": "pizza"
               }
             }
           }
@@ -44,6 +45,7 @@ addons:
   - Type From the existing OPA Package 
   - OPACustomCheck 
   - Handle resources
+# tests for release/bundle matching; should not be found in cluster
 - name: goldilocks 
   versions:
     start: 1.1.0
@@ -66,10 +68,11 @@ addons:
   - Type From the existing OPA Package 
   - OPACustomCheck 
   - Handle resources
+# tests for locating schema files upstream
 - name: apache 
   versions:
     start: 8.5.11
-    end: 8.9.6
+    end: 9.0.1
   notes: A text field with general notes
   source:
     chart: apache
@@ -88,10 +91,11 @@ addons:
   - Type From the existing OPA Package 
   - OPACustomCheck 
   - Handle resources
+# tests for no user-supplied values
 - name: mysql 
   versions:
     start: 8.4.2
-    end: 8.8.13
+    end: 8.8.23
   notes: A text field with general notes
   source:
     chart: mysql

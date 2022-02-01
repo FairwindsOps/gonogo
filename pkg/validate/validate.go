@@ -29,18 +29,39 @@ type match struct {
 // matches is a map of matched bundles+releases where the key is the release name
 type matches map[string]match
 
+// Validate expects a bundle config, finds matching releases in-cluster,
+// validates schema, and returns an error
+func Validate(bundle string) (Output, error) {
+
+	o := Output{}
+
+	m := getMatch(bundle)
+	for _, match := range m {
+		err := match.ValidateValues()
+		if err != nil {
+			klog.Error(err)
+		}
+		o.Addons = append(o.Addons, match.AddonOutput)
+	}
+	return o, nil
+}
+
+// getMatch expects a bundle string which is used to find matching in-cluster releases
 func getMatch(b string) matches {
 	// finalMatches is the map that we use to store matches when we find them
 	finalMatches := matches{}
+
 	config, err := bundle.ReadConfig(b)
 	if err != nil {
 		klog.Fatal(err)
 	}
+
 	client := helm.NewHelm("")
 	err = client.GetReleasesVersionThree()
 	if err != nil {
 		klog.Fatal(err)
 	}
+
 	for _, release := range client.Releases {
 		for _, bundle := range config.Addons {
 			if bundle.Source.Chart == release.Chart.Metadata.Name {
@@ -61,8 +82,17 @@ func getMatch(b string) matches {
 					continue
 				}
 
-				if v.GTE(vStart) && v.LTE(vEnd) {
+				if v.GTE(vStart) && v.LT(vEnd) {
 					klog.V(3).Infof("Found match for chart %s in release %s", bundle.Name, release.Name)
+					// addOns.Addons = append(addOns.Addons, &AddonOutput{
+					// 				Name: release.Name,
+					// 				Versions: OutputVersion{
+					// 					Current: release.Chart.Metadata.Version,
+					// 					Upgrade: bundle.Versions.End,
+					// 				},
+					// 			},
+					// 		)
+
 					finalMatches[fmt.Sprintf("%s/%s", release.Namespace, release.Name)] = match{
 						Bundle:  bundle,
 						Release: release,
@@ -87,18 +117,9 @@ func getMatch(b string) matches {
 	return finalMatches
 }
 
-func Validate(bundle string) error {
-	m := getMatch(bundle)
-	for _, match := range m {
-		match.ValidateValues()
-	}
-
-	return nil
-}
-
 func (m *match) ValidateValues() error {
 	if len(m.Release.Config) < 1 {
-		klog.Infof("no user values specified for release %s/%s", m.Release.Namespace, m.Release.Name)
+		klog.V(3).Infof("no user values specified for release %s/%s", m.Release.Namespace, m.Release.Name)
 		return nil
 	}
 
@@ -113,12 +134,13 @@ func (m *match) ValidateValues() error {
 		case true:
 			err := chartutil.ValidateAgainstSingleSchema(cv, vs)
 			if err != nil {
-				klog.Error("validation failed for release ", m.Release.Namespace, "/", m.Release.Name, err)
-				return err
+				klog.V(3).Infof("schema validation failed for release ", m.Release.Namespace, "/", m.Release.Name, err)
+				m.AddonOutput.ActionItems = append(m.AddonOutput.ActionItems, "schema validation failed")
+				return nil
 			}
-			fmt.Printf("schema validation passed for release %v\n", m.Release.Name)
+			klog.V(3).Infof("schema validation passed for release %v\n", m.Release.Name)
 		case false:
-			fmt.Printf("invalid json schema for release %v\n", m.Release.Name)
+			return fmt.Errorf("invalid json schema for release %v", m.Release.Name)
 		}
 		return nil
 	}
@@ -126,26 +148,28 @@ func (m *match) ValidateValues() error {
 	repoSchema, err := fetchJSONSchema(m.Bundle.Source.Repository, m.Bundle.Versions.End, m.Bundle.Source.Chart)
 	if err != nil {
 		klog.Error(err)
-		return err
+		return nil
 	}
 
 	if len(repoSchema) > 0 {
 		err := chartutil.ValidateAgainstSingleSchema(cv, repoSchema)
 		if err != nil {
-			klog.Error("validation failed for release ", m.Release.Namespace, "/", m.Release.Name, err)
-			return err
+			klog.V(3).Infof("schema validation failed for release ", m.Release.Namespace, "/", m.Release.Name, err)
+			m.AddonOutput.ActionItems = append(m.AddonOutput.ActionItems, "schema validation failed")
+			return nil
 		}
-		klog.Infof("schema validation passed for release %s", m.Release.Name)
+		klog.V(3).Infof("schema validation passed for release %s", m.Release.Name)
 		return nil
 	}
 
-	klog.Infof("no schema found for release %v", m.Release.Name)
+	m.AddonOutput.Warnings = append(m.AddonOutput.Warnings, "no schema available, unable to validate release")
+	klog.V(3).Infof("no schema found for release %v", m.Release.Name)
 	return nil
 }
 
 // fetchJSONSchema will search a chart repo for the presence of a values.schema.json file and use it for schema validation if found
 func fetchJSONSchema(repo, version, chart string) ([]byte, error) {
-	klog.Infof("checking upstream of %s for schema json", chart)
+	klog.V(3).Infof("checking upstream of %s for schema json", chart)
 
 	u := fmt.Sprintf("%v/%v-%v.tgz", repo, chart, version)
 
