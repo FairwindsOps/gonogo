@@ -48,7 +48,7 @@ func Validate(bundle string) (string, error) {
 	if err != nil {
 		klog.Error(err)
 	}
-	
+
 	so := (string(out))
 	return so, err
 
@@ -142,9 +142,8 @@ func (m *match) ValidateValues() error {
 		case true:
 			err := chartutil.ValidateAgainstSingleSchema(cv, vs)
 			if err != nil {
-				klog.V(3).Infof("schema validation failed for release ", m.Release.Namespace, "/", m.Release.Name, err)
 				m.AddonOutput.ActionItems = append(m.AddonOutput.ActionItems, "schema validation failed")
-				return nil
+				return fmt.Errorf("schema validation failed for release %v/%v", m.Release.Namespace, m.Release.Name)
 			}
 			klog.V(3).Infof("schema validation passed for release %v\n", m.Release.Name)
 		case false:
