@@ -44,7 +44,7 @@ func Validate(bundle string) (string, error) {
 		o.Addons = append(o.Addons, match.AddonOutput)
 	}
 
-	out, err := json.Marshal(o)
+	out, err := json.MarshalIndent(o, "", " ")
 	if err != nil {
 		klog.Error(err)
 	}
