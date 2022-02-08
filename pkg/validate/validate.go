@@ -35,7 +35,11 @@ func Validate(bundle string) (string, error) {
 
 	o := Output{}
 
-	m := getMatch(bundle)
+	m, err := getMatches(bundle)
+	if err != nil {
+		klog.Fatal(err)
+	}
+
 	for _, match := range m {
 		err := match.ValidateValues()
 		if err != nil {
@@ -54,19 +58,19 @@ func Validate(bundle string) (string, error) {
 }
 
 // getMatch expects a bundle string which is used to find matching in-cluster releases
-func getMatch(b string) matches {
+func getMatches(b string) (matches, error) {
 	// finalMatches is the map that we use to store matches when we find them
 	finalMatches := matches{}
 
 	config, err := bundle.ReadConfig(b)
 	if err != nil {
-		klog.Fatal(err)
+		return nil, err
 	}
 
 	client := helm.NewHelm("")
 	err = client.GetReleasesVersionThree()
 	if err != nil {
-		klog.Fatal(err)
+		return nil, err
 	}
 
 	for _, release := range client.Releases {
@@ -91,15 +95,6 @@ func getMatch(b string) matches {
 
 				if v.GTE(vStart) && v.LT(vEnd) {
 					klog.V(3).Infof("Found match for chart %s in release %s", bundle.Name, release.Name)
-					// addOns.Addons = append(addOns.Addons, &AddonOutput{
-					// 				Name: release.Name,
-					// 				Versions: OutputVersion{
-					// 					Current: release.Chart.Metadata.Version,
-					// 					Upgrade: bundle.Versions.End,
-					// 				},
-					// 			},
-					// 		)
-
 					finalMatches[fmt.Sprintf("%s/%s", release.Namespace, release.Name)] = match{
 						Bundle:  bundle,
 						Release: release,
@@ -121,7 +116,7 @@ func getMatch(b string) matches {
 	} else {
 		klog.Infof("releases that matched the config: %v\n", funk.Keys(finalMatches))
 	}
-	return finalMatches
+	return finalMatches, nil
 }
 
 func (m *match) ValidateValues() error {
@@ -142,7 +137,7 @@ func (m *match) ValidateValues() error {
 			err := chartutil.ValidateAgainstSingleSchema(cv, vs)
 			if err != nil {
 				m.AddonOutput.ActionItems = append(m.AddonOutput.ActionItems, "schema validation failed")
-				return fmt.Errorf("schema validation failed for release %v/%v", m.Release.Namespace, m.Release.Name)
+				return nil
 			}
 			klog.V(3).Infof("schema validation passed for release %v\n", m.Release.Name)
 		case false:
