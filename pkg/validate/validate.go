@@ -37,20 +37,20 @@ func Validate(bundle string) (string, error) {
 
 	m, err := getMatches(bundle)
 	if err != nil {
-		klog.Fatal(err)
+		return "", err
 	}
 
 	for _, match := range m {
 		err := match.ValidateValues()
 		if err != nil {
-			klog.Error(err)
+			return "", err
 		}
 		o.Addons = append(o.Addons, match.AddonOutput)
 	}
 
 	out, err := json.MarshalIndent(o, "", " ")
 	if err != nil {
-		klog.Error(err)
+		return "", err
 	}
 
 	return string(out), err
@@ -148,7 +148,6 @@ func (m *match) ValidateValues() error {
 
 	repoSchema, err := fetchJSONSchema(m.Bundle.Source.Repository, m.Bundle.Versions.End, m.Bundle.Source.Chart)
 	if err != nil {
-		klog.Error(err)
 		m.AddonOutput.Warnings = append(m.AddonOutput.Warnings, "no schema available, unable to validate release")
 		klog.V(3).Infof("no schema found for release %v", m.Release.Name)
 		return nil
