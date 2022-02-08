@@ -49,8 +49,7 @@ func Validate(bundle string) (string, error) {
 		klog.Error(err)
 	}
 
-	so := (string(out))
-	return so, err
+	return string(out), err
 
 }
 
