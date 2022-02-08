@@ -1,6 +1,5 @@
 package validate
 
-// need to change return type of validate pkg to send the output struct?
 
 type AddonOutput struct {
 	Name              string        `yaml:"name"`
