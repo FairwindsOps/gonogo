@@ -30,12 +30,12 @@ func (m *match) ValidateValues() error {
 		case true:
 			err := chartutil.ValidateAgainstSingleSchema(cv, vs)
 			if err != nil {
-				m.AddonOutput.ActionItems = &ActionItem{
+				m.AddonOutput.ActionItems = append(m.AddonOutput.ActionItems, &ActionItem{
 					ResourceNamespace: m.Release.Namespace,
 					ResourceName:      m.Release.Name,
 					Title:             "Failed Schema Validation",
 					Description:       "schema validation failed for this helm release",
-				}
+				})
 				return nil
 			}
 			klog.V(3).Infof("schema validation passed for release %v\n", m.Release.Name)
@@ -56,12 +56,12 @@ func (m *match) ValidateValues() error {
 		err := chartutil.ValidateAgainstSingleSchema(cv, repoSchema)
 		if err != nil {
 			klog.V(3).Infof("schema validation failed for release ", m.Release.Namespace, "/", m.Release.Name, err)
-			m.AddonOutput.ActionItems = &ActionItem{
+			m.AddonOutput.ActionItems = append(m.AddonOutput.ActionItems, &ActionItem{
 				ResourceNamespace: m.Release.Namespace,
 				ResourceName:      m.Release.Name,
 				Title:             "Failed Schema Validation",
 				Description:       "schema validation failed for this helm release",
-			}
+			})
 			return nil
 		}
 		klog.V(3).Infof("schema validation passed for release %s", m.Release.Name)

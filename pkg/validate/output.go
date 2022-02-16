@@ -8,7 +8,7 @@ type AddonOutput struct {
 	Name              string        `yaml:"name"`
 	Versions          OutputVersion `yaml:"versions"`
 	UpgradeConfidence int           `yaml:"upgradeConfidence"`
-	ActionItems       *ActionItem      `yaml:"actionItems"`
+	ActionItems       []*ActionItem      `yaml:"actionItems"`
 	Notes             string        `yaml:"notes"`
 	Warnings          []string      `yaml:"warnings"`
 }
