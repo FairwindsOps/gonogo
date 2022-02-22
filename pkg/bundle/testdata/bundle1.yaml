@@ -42,9 +42,6 @@ addons:
         }
       }
   opa_checks:
-  - Type From the existing OPA Package 
-  - OPACustomCheck 
-  - Handle resources
 # tests for release/bundle matching; should not be found in cluster
 - name: goldilocks 
   versions:
@@ -114,3 +111,63 @@ addons:
   - Type From the existing OPA Package 
   - OPACustomCheck 
   - Handle resources
+- name: nginx-ingress
+  versions:
+    start: 3.15.2
+    end: 4.0.12
+  compatible_k8s_versions:
+  - 1.19
+  - 1.20
+  - 1.21
+  - 1.22
+  source: 
+    chart: ingress-nginx
+    repository: https://kubernetes.github.io/ingress-nginx
+  values_schema: ""
+  opa_checks: 
+- name: cert-manager
+  versions:
+    start: 0.5.2
+    end: 1.7.0
+  notes: A text field with general notes
+  source:
+    chart: cert-manager
+    repository: https://charts.jetstack.io
+  warnings: 
+  - "warning 1"
+  - "warning 2"
+  compatible_k8s_versions:
+  - 1.20
+  - 1.18
+  necessary_api_versions:
+  - apps/v1
+  - core/v1
+  values_schema: ""
+  opa_checks: 
+  - > 
+    ingressUsingDeprecatedAnnotations[actionItem] {
+        input.kind == "Ingress"
+        input.metadata.annotations[k] = _
+        startswith(k, "certmanager.k8s.io/")
+        actionItem := {
+          "title": "Deprecated annotation present",
+          "description": "Old versions of the cert-manager annotation have been found on ingresses",
+          "severity": 0.1,
+          "remediation": "Please update your ingress annotations to use the current versions. See https://cert-manager.io/docs/release-notes/release-notes-0.11/ for details",
+          "category": "Reliability"
+        }
+      }
+
+  - >
+    secretUsingDeprecatedAnnotations[actionItem] {
+            input.kind == "Secret"
+            input.metadata.annotations[k] = _
+            startswith(k, "certmanager.k8s.io/")
+            actionItem := {
+              "title": "Deprecated annotation present",
+              "description": "Old versions of the cert-manager annotation have been found on secrets",
+              "severity": 0.1,
+              "remediation": "Please update your secret annotations to use the current versions. See https://cert-manager.io/docs/release-notes/release-notes-0.11/ for details",
+              "category": "Reliability"
+            }
+          }
