@@ -42,7 +42,7 @@ func getMatches(b string) (matches, error) {
 		for _, bundle := range config.Addons {
 			if bundle.Source.Chart == release.Chart.Metadata.Name {
 
-				v, err := semver.Make(release.Chart.Metadata.Version)
+				v, err := semver.ParseTolerant(release.Chart.Metadata.Version)
 				if err != nil {
 					klog.Error(err)
 					continue
