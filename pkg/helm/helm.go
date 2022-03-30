@@ -33,6 +33,10 @@ type Helm struct {
 	Namespace string
 }
 
+func (h *Helm) GetData(ctx context.Context, group, kind string) ([]interface{}, error) {
+	return nil, nil
+}
+
 // NewHelm returns a basic helm struct
 func NewHelm(namespace string) *Helm {
 	return &Helm{

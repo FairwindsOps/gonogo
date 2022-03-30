@@ -1,24 +1,73 @@
+
 package validate
 
 import (
-	_ "context"
+	"bytes"
+	"context"
 	"fmt"
+	"io"
 
-	_ "github.com/fairwindsops/insights-plugins/opa/pkg/rego"
+	"github.com/fairwindsops/hall-monitor/pkg/helm"
+	"github.com/fairwindsops/insights-plugins/opa/pkg/rego"
+	"gopkg.in/yaml.v3"
+	"k8s.io/klog"
 )
 
 func (m *match) RunOPAChecks() error {
-	//  RunRegoForItem(ctx context.Context, regoStr string, params map[string]interface{}, obj map[string]interface{}, dataFn KubeDataFunction, insightsInfo *InsightsInfo)
-	// ([]interface{}, error)
+	if len(m.Bundle.OpaChecks) < 1 {
+		return nil
+	}
 
-	fmt.Println(m.Bundle.OpaChecks)
+	manifests, err := splitYAML([]byte(m.Release.Manifest))
+	if err != nil {
+		klog.Error(err)
+		return err
+	}
 
-	// unmarshal, err :=
+	client := helm.NewHelm("")
 
-	// r, err := rego.RunRegoForItem(context.TODO(), somerego, nil, obj?,  )
+	for _, o := range m.Bundle.OpaChecks {
+		for _, y := range manifests {
+			// RunRegoForItem(ctx context.Context, regoStr string, params map[string]interface{}, obj map[string]interface{}, dataFn KubeDataFunction, insightsInfo *InsightsInfo)
+			r, err := rego.RunRegoForItem(context.TODO(), o, nil, y, client, nil)
+			if err != nil {
+				klog.Error(err)
+				continue
+			}
+			fmt.Println("value of r is", r)
+
+		}
+	}
 
 	return nil
 }
+
+func splitYAML(objects []byte) ([]map[string]interface{}, error) {
+
+	dec := yaml.NewDecoder(bytes.NewReader(objects))
+
+	var output []map[string]interface{}
+
+	for {
+		var value map[string]interface{}
+		err := dec.Decode(&value)
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+		output = append(output, value)
+	}
+	return output, nil
+}
+
+// Need to fill out parameters for this function:
+// RunRegoForItem(ctx context.Context, regoStr string, params map[string]interface{}, obj map[string]interface{}, dataFn KubeDataFunction, insightsInfo *InsightsInfo)
+// ([]interface{}, error)
+
+// intent was to parse helm manifests for specified release object (match) but what if thing we need to check isn't part of
+// the release manifest? cert-manager does not have ingresses as part of release. This would need to be grabbed from the cluster.
 
 // func (m *match) AddActionItems(item *ActionItem) error {
 
