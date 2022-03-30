@@ -85,9 +85,6 @@ addons:
   - core/v1
   values_schema: ""
   opa_checks:
-  - Type From the existing OPA Package 
-  - OPACustomCheck 
-  - Handle resources
 # tests for no user-supplied values
 - name: mysql 
   versions:
@@ -108,9 +105,6 @@ addons:
   - core/v1
   values_schema: ""
   opa_checks:
-  - Type From the existing OPA Package 
-  - OPACustomCheck 
-  - Handle resources
 - name: nginx-ingress
   versions:
     start: 3.15.2
@@ -143,8 +137,11 @@ addons:
   - apps/v1
   - core/v1
   values_schema: ""
+  resources: 
+  - "Ingress"
   opa_checks: 
   - > 
+    package Fairwinds
     ingressUsingDeprecatedAnnotations[actionItem] {
         input.kind == "Ingress"
         input.metadata.annotations[k] = _
@@ -159,6 +156,7 @@ addons:
       }
 
   - >
+    package Fairwinds
     secretUsingDeprecatedAnnotations[actionItem] {
             input.kind == "Secret"
             input.metadata.annotations[k] = _
