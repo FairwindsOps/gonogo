@@ -1,4 +1,3 @@
-
 package validate
 
 import (
@@ -28,7 +27,6 @@ func (m *match) RunOPAChecks() error {
 
 	for _, o := range m.Bundle.OpaChecks {
 		for _, y := range manifests {
-			// RunRegoForItem(ctx context.Context, regoStr string, params map[string]interface{}, obj map[string]interface{}, dataFn KubeDataFunction, insightsInfo *InsightsInfo)
 			r, err := rego.RunRegoForItem(context.TODO(), o, nil, y, client, nil)
 			if err != nil {
 				klog.Error(err)
@@ -61,14 +59,3 @@ func splitYAML(objects []byte) ([]map[string]interface{}, error) {
 	}
 	return output, nil
 }
-
-// Need to fill out parameters for this function:
-// RunRegoForItem(ctx context.Context, regoStr string, params map[string]interface{}, obj map[string]interface{}, dataFn KubeDataFunction, insightsInfo *InsightsInfo)
-// ([]interface{}, error)
-
-// intent was to parse helm manifests for specified release object (match) but what if thing we need to check isn't part of
-// the release manifest? cert-manager does not have ingresses as part of release. This would need to be grabbed from the cluster.
-
-// func (m *match) AddActionItems(item *ActionItem) error {
-
-// }
