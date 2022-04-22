@@ -20,12 +20,14 @@ func Validate(bundle string) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		o.Addons = append(o.Addons, match.AddonOutput)
 
 		err = match.RunOPAChecks()
 		if err != nil {
 			return "", err
 		}
+		// match.AddonOutput.ActionItems = actionItems
+
+		o.Addons = append(o.Addons, match.AddonOutput)
 	}
 
 	out, err := json.MarshalIndent(o, "", " ")

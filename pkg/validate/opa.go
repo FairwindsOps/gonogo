@@ -3,7 +3,6 @@ package validate
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"io"
 
 	"github.com/fairwindsops/hall-monitor/pkg/helm"
@@ -20,10 +19,12 @@ func (m *match) RunOPAChecks() error {
 	manifests, err := splitYAML([]byte(m.Release.Manifest))
 	if err != nil {
 		klog.Error(err)
-		return err
+		return nil
 	}
 
 	client := helm.NewHelm("")
+
+	// var actionItems []*ActionItem
 
 	for _, o := range m.Bundle.OpaChecks {
 		for _, y := range manifests {
@@ -32,7 +33,20 @@ func (m *match) RunOPAChecks() error {
 				klog.Error(err)
 				continue
 			}
-			fmt.Println("value of r is", r)
+			for _, l := range r {
+				b, err := yaml.Marshal(l)
+				if err != nil {
+					klog.Error(err)
+					continue
+				}
+				var item *ActionItem
+				err = yaml.Unmarshal(b, &item)
+				if err != nil {
+					klog.Error(err)
+					continue
+				}
+				m.AddonOutput.ActionItems = append(m.AddonOutput.ActionItems, item)
+			}
 
 		}
 	}
