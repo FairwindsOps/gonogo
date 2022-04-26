@@ -24,8 +24,6 @@ func (m *match) RunOPAChecks() error {
 
 	client := helm.NewHelm("")
 
-	// var actionItems []*ActionItem
-
 	for _, o := range m.Bundle.OpaChecks {
 		for _, y := range manifests {
 			r, err := rego.RunRegoForItem(context.TODO(), o, nil, y, client, nil)
