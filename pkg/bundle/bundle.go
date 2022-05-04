@@ -47,6 +47,7 @@ type Bundle struct {
 	NecessaryAPIVersions  []string `yaml:"necessary_api_versions"`
 	ValuesSchema          string   `yaml:"values_schema"`
 	OpaChecks             []string `yaml:"opa_checks"`
+	Resources             []string `yaml:"resources"`
 }
 
 func ReadConfig(file string) (*BundleConfig, error) {
