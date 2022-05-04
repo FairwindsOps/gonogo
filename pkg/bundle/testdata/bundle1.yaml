@@ -138,7 +138,9 @@ addons:
   - core/v1
   values_schema: ""
   resources:
-  - "Ingress"
+  - "networking.k8s.io/v1/ingresses"
+  - "v1/pods"
+  - "v1/secrets"
   opa_checks:
   - >
     package Fairwinds
