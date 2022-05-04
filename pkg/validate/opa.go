@@ -1,3 +1,17 @@
+// Copyright 2021 FairwindsOps, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License
+
 package validate
 
 import (
@@ -26,7 +40,7 @@ var (
 	resource string
 )
 
-
+// RunOPAChecks takes a list of map[string]interface{} representing Helm charts and cluster objects and runs them through Rego and returns ActionItems
 func (m *match) RunOPAChecks() error {
 	if len(m.Bundle.OpaChecks) < 1 {
 		return nil
@@ -95,6 +109,7 @@ func (m *match) RunOPAChecks() error {
 	return nil
 }
 
+// splitYAML takes a list of Helm manifests and splits them into separate files
 func splitYAML(objects []byte) ([]map[string]interface{}, error) {
 
 	dec := yaml.NewDecoder(bytes.NewReader(objects))
@@ -115,6 +130,7 @@ func splitYAML(objects []byte) ([]map[string]interface{}, error) {
 	return output, nil
 }
 
+// GetClusterObjects returns a list of unstructured.Unstructured objects
 func GetClusterObjects(dynamic dynamic.Interface, ctx context.Context, group string, version string, resource string, namespace string) ([]unstructured.Unstructured, error) {
 	resourceId := schema.GroupVersionResource{
 		Group:    group,

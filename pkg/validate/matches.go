@@ -1,3 +1,17 @@
+// Copyright 2021 FairwindsOps, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License
+
 package validate
 
 import (
@@ -22,7 +36,7 @@ type match struct {
 // matches is a map of matched bundles+releases where the key is the release name
 type matches map[string]match
 
-// getMatch expects a bundle string which is used to find matching in-cluster releases
+// getMatches expects a bundle string which is used to find matching in-cluster releases
 func getMatches(b string) (matches, error) {
 	// finalMatches is the map that we use to store matches when we find them
 	finalMatches := matches{}

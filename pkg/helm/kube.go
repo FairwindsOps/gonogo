@@ -63,6 +63,7 @@ func GetConfigInstance() *kube {
 	return kubeClient
 }
 
+// getKubeClient returns a clientset instance
 func getKubeClient() kubernetes.Interface {
 	kubeConf, err := config.GetConfig()
 	if err != nil {
@@ -77,6 +78,7 @@ func getKubeClient() kubernetes.Interface {
 	return clientset
 }
 
+// GetDynamicInstance reutns a dynamic client instance
 func GetDynamicInstance() *DynamicClientInstance {
 	clientOnceDynamic.Do(func() {
 		if dynamicClient == nil {
@@ -112,6 +114,8 @@ func getRESTMapper() meta.RESTMapper {
 	}
 	return restmapper
 }
+
+// GetNamespaces retrieves a list of namespaces for a cluster
 func GetNamespaces() *v1.NamespaceList {
 	ns, err := kubeClient.Client.CoreV1().Namespaces().List(context.TODO(), metav1.ListOptions{})
 	if err != nil {

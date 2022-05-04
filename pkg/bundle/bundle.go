@@ -23,20 +23,24 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+// Source is the chart and repo for Helm releases
 type Source struct {
 	Chart      string `yaml:"chart"`
 	Repository string `yaml:"repository"`
 }
 
+// Versions is a list of version strings within the bundle spec file
 type Versions struct {
 	Start string `yaml:"start"`
 	End   string `yaml:"end"`
 }
 
+// BundleConfig is the top level key for the bundle spec file and contains slices of the Bundle struct
 type BundleConfig struct {
 	Addons []*Bundle `yaml:"addons"`
 }
 
+// Bundle maps the fields from a supplied bundle spec file
 type Bundle struct {
 	Name                  string   `yaml:"name"`
 	Versions              Versions `yaml:"versions"`
@@ -50,6 +54,7 @@ type Bundle struct {
 	Resources             []string `yaml:"resources"`
 }
 
+// ReadConfig takes a bundle spec file as a string and maps it into the Bundle struct
 func ReadConfig(file string) (*BundleConfig, error) {
 	body, err := ioutil.ReadFile(file)
 	if err != nil {
