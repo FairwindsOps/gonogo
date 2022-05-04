@@ -15,7 +15,6 @@
 package helm
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 
@@ -23,7 +22,6 @@ import (
 	"helm.sh/helm/v3/pkg/releaseutil"
 	helmstoragev3 "helm.sh/helm/v3/pkg/storage"
 	driverv3 "helm.sh/helm/v3/pkg/storage/driver"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // Helm represents all current releases that we can find in the cluster
@@ -33,14 +31,11 @@ type Helm struct {
 	Namespace string
 }
 
-func (h *Helm) GetData(ctx context.Context, group, kind string) ([]interface{}, error) {
-	return nil, nil
-}
 
 // NewHelm returns a basic helm struct
 func NewHelm(namespace string) *Helm {
 	return &Helm{
-		Kube:      getConfigInstance(),
+		Kube:      GetConfigInstance(),
 		Namespace: namespace,
 	}
 }
@@ -49,10 +44,8 @@ func NewHelm(namespace string) *Helm {
 func (h *Helm) GetReleasesVersionThree() error {
 	hs := driverv3.NewSecrets(h.Kube.Client.CoreV1().Secrets(h.Namespace))
 	helmClient := helmstoragev3.Init(hs)
-	namespaces, err := h.Kube.Client.CoreV1().Namespaces().List(context.TODO(), metav1.ListOptions{})
-	if err != nil {
-		return err
-	}
+	namespaces := GetNamespaces()
+
 	releases, err := helmClient.ListDeployed()
 	if err != nil {
 		return err
