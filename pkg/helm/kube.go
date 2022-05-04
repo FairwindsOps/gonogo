@@ -18,22 +18,41 @@ import (
 	"fmt"
 	"os"
 	"sync"
+	"context"
 
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/dynamic"
+	"k8s.io/klog/v2"
 	// This is required to auth to cloud providers (i.e. GKE)
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
+	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
+
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/api/core/v1"
 )
 
 type kube struct {
 	Client kubernetes.Interface
 }
 
+func (h *kube) GetData(ctx context.Context, group, kind string) ([]interface{}, error) {
+	return nil, nil
+}
+
+type DynamicClientInstance struct {
+	Client     dynamic.Interface
+	RESTMapper meta.RESTMapper
+}
+
 var kubeClient *kube
 var once sync.Once
+var clientOnceDynamic sync.Once
+var dynamicClient *DynamicClientInstance
 
 // GetConfigInstance returns a Kubernetes interface based on the current configuration
-func getConfigInstance() *kube {
+func GetConfigInstance() *kube {
 	once.Do(func() {
 		if kubeClient == nil {
 			kubeClient = &kube{
@@ -56,4 +75,47 @@ func getKubeClient() kubernetes.Interface {
 		os.Exit(1)
 	}
 	return clientset
+}
+
+func GetDynamicInstance() *DynamicClientInstance {
+	clientOnceDynamic.Do(func() {
+		if dynamicClient == nil {
+			dynamicClient = &DynamicClientInstance{
+				Client:     getKubeClientDynamic(),
+				RESTMapper: getRESTMapper(),
+			}
+		}
+	})
+	return dynamicClient
+}
+
+func getKubeClientDynamic() dynamic.Interface {
+	kubeConf, err := config.GetConfig()
+	if err != nil {
+		klog.Fatalf("Error getting kubeconfig: %v", err)
+	}
+	clientset, err := dynamic.NewForConfig(kubeConf)
+	if err != nil {
+		klog.Fatalf("Error creating dynamic kubernetes client: %v", err)
+	}
+	return clientset
+}
+
+func getRESTMapper() meta.RESTMapper {
+	kubeConf, err := config.GetConfig()
+	if err != nil {
+		klog.Fatalf("Error getting kubeconfig: %v", err)
+	}
+	restmapper, err := apiutil.NewDynamicRESTMapper(kubeConf)
+	if err != nil {
+		klog.Fatalf("Error creating REST Mapper: %v", err)
+	}
+	return restmapper
+}
+func GetNamespaces() *v1.NamespaceList {
+	ns, err := kubeClient.Client.CoreV1().Namespaces().List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		klog.Error(err)
+	}
+	return ns
 }
