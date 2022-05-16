@@ -83,7 +83,7 @@ func (m *match) RunOPAChecks() error {
 
 	for _, o := range m.Bundle.OpaChecks {
 		for _, y := range manifests {
-			r, err := rego.RunRegoForItem(context.TODO(), o, nil, y, clientset, nil)
+			r, err := rego.RunRegoForItem(context.TODO(), o, nil, y, clientset)
 			if err != nil {
 				klog.Error(err)
 				continue
