@@ -74,6 +74,7 @@ func (m *match) RunOPAChecks() error {
 			objs, err := GetClusterObjects(dynamicClient, context.TODO(), group, version, resource, ns)
 			if err != nil {
 				klog.Error()
+				continue
 			}
 			for _, i := range objs {
 				manifests = append(manifests, i.Object)
