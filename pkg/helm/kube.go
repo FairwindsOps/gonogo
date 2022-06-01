@@ -78,7 +78,7 @@ func getKubeClient() kubernetes.Interface {
 	return clientset
 }
 
-// GetDynamicInstance reutns a dynamic client instance
+// GetDynamicInstance returns a dynamic client instance
 func GetDynamicInstance() *DynamicClientInstance {
 	clientOnceDynamic.Do(func() {
 		if dynamicClient == nil {
