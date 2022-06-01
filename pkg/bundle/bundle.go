@@ -42,16 +42,16 @@ type BundleConfig struct {
 
 // Bundle maps the fields from a supplied bundle spec file
 type Bundle struct {
-	Name                  string   `yaml:"name"`
-	Versions              Versions `yaml:"versions"`
-	Notes                 string   `yaml:"notes"`
-	Source                Source   `yaml:"source"`
-	Warnings              []string `yaml:"warnings"`
-	CompatibleK8SVersions []string `yaml:"compatible_k8s_versions"`
-	NecessaryAPIVersions  []string `yaml:"necessary_api_versions"`
-	ValuesSchema          string   `yaml:"values_schema"`
-	OpaChecks             []string `yaml:"opa_checks"`
-	Resources             []string `yaml:"resources"` // api objects
+	Name                  string   `yaml:"name"`                    // name of the helm release
+	Versions              Versions `yaml:"versions"`                // start and stop versions of helm chart to evaluate
+	Notes                 string   `yaml:"notes"`                   // strings of general notes
+	Source                Source   `yaml:"source"`                  // chart name and repository for helm release
+	Warnings              []string `yaml:"warnings"`                // strings of warning messages
+	CompatibleK8SVersions []string `yaml:"compatible_k8s_versions"` // kubernetes cluster version to check for
+	NecessaryAPIVersions  []string `yaml:"necessary_api_versions"`  // specific api versions to check for
+	ValuesSchema          string   `yaml:"values_schema"`           // embedded values.schema.json
+	OpaChecks             []string `yaml:"opa_checks"`              // embedded rego code
+	Resources             []string `yaml:"resources"`               // api objects
 }
 
 // ReadConfig takes a bundle spec file as a string and maps it into the Bundle struct
