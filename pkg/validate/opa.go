@@ -40,7 +40,7 @@ var (
 	resource string
 )
 
-// RunOPAChecks takes a list of map[string]interface{} representing Helm charts and cluster objects and runs them through Rego and returns ActionItems
+// RunOPAChecks evaluates rego defined in bundle spec against helm charts and cluster objects and returns an error
 func (m *match) RunOPAChecks() error {
 	if len(m.Bundle.OpaChecks) < 1 {
 		return nil

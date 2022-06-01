@@ -51,7 +51,7 @@ type Bundle struct {
 	NecessaryAPIVersions  []string `yaml:"necessary_api_versions"`
 	ValuesSchema          string   `yaml:"values_schema"`
 	OpaChecks             []string `yaml:"opa_checks"`
-	Resources             []string `yaml:"resources"`
+	Resources             []string `yaml:"resources"` // api objects
 }
 
 // ReadConfig takes a bundle spec file as a string and maps it into the Bundle struct
