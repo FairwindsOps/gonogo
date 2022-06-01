@@ -100,6 +100,15 @@ func (m *match) RunOPAChecks() error {
 					klog.Error(err)
 					continue
 				}
+				if item.ResourceKind == "" {
+					item.ResourceKind = y["kind"].(string)
+				}
+				if item.ResourceName == "" {
+					item.ResourceName = y["metadata"].(map[string]interface{})["name"].(string)
+				}
+				if item.ResourceNamespace == "" {
+					item.ResourceNamespace = y["metadata"].(map[string]interface{})["namespace"].(string)
+				}
 				m.AddonOutput.ActionItems = append(m.AddonOutput.ActionItems, item)
 			}
 
