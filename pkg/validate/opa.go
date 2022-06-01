@@ -21,7 +21,7 @@ import (
 	"strings"
 
 	"github.com/fairwindsops/hall-monitor/pkg/helm"
-	"github.com/fairwindsops/insights-plugins/opa/pkg/rego"
+	"github.com/fairwindsops/insights-plugins/plugins/opa/pkg/rego"
 	"gopkg.in/yaml.v3"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -83,7 +83,7 @@ func (m *match) RunOPAChecks() error {
 
 	for _, o := range m.Bundle.OpaChecks {
 		for _, y := range manifests {
-			r, err := rego.RunRegoForItem(context.TODO(), o, nil, y, clientset)
+			r, err := rego.RunRegoForItemV2(context.TODO(), o, y, clientset, nil)
 			if err != nil {
 				klog.Error(err)
 				continue
