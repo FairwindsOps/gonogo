@@ -39,7 +39,6 @@ func Validate(bundle string) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		// match.AddonOutput.ActionItems = actionItems
 
 		o.Addons = append(o.Addons, match.AddonOutput)
 	}
