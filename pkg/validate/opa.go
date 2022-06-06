@@ -40,18 +40,9 @@ var (
 	resource string
 )
 
-// RunOPAChecks evaluates rego defined in bundle spec against helm charts and cluster objects and returns an error
-func (m *match) RunOPAChecks() error {
-	if len(m.Bundle.OpaChecks) < 1 {
-		return nil
-	}
-
-	manifests, err := splitYAML([]byte(m.Release.Manifest))
-	if err != nil {
-		klog.Error(err)
-		return nil
-	}
-
+// getClusterManifests gets manifests from the cluster not included in helm release
+func (m *match) getClusterManifests() ([]map[string]interface{}, error) {
+	var manifests []map[string]interface{}
 	resources := m.Bundle.Resources
 
 	namespaces := helm.GetNamespaces()
@@ -59,18 +50,7 @@ func (m *match) RunOPAChecks() error {
 	for _, namespace := range namespaces.Items {
 		ns := namespace.Name
 		for _, r := range resources {
-			rs := strings.SplitAfter(r, "/")
-
-			if len(rs) == 3 {
-				group = rs[0]
-				version = rs[1]
-				resource = rs[2]
-			} else {
-				group = ""
-				version = rs[0]
-				resource = rs[1]
-			}
-
+			splitResourcePath(r)
 			objs, err := GetClusterObjects(dynamicClient, context.TODO(), group, version, resource, ns)
 			if err != nil {
 				klog.Error()
@@ -81,42 +61,68 @@ func (m *match) RunOPAChecks() error {
 			}
 		}
 	}
+	return manifests, nil
+}
+
+// RunOPAChecks evaluates rego defined in bundle spec against helm charts and cluster objects and returns an error
+func (m *match) RunOPAChecks() error {
+	if len(m.Bundle.OpaChecks) < 1 {
+		return nil
+	}
+
+	manifests, err := splitYAML([]byte(m.Release.Manifest))
+	if err != nil {
+		return err
+	}
+
+	clusterManifests, err := m.getClusterManifests()
+	if err != nil {
+		return err
+	}
+
+	manifests = append(manifests, clusterManifests...)
 
 	for _, o := range m.Bundle.OpaChecks {
 		for _, y := range manifests {
-			r, err := rego.RunRegoForItemV2(context.TODO(), o, y, clientset, nil)
-			if err != nil {
-				klog.Error(err)
-				continue
-			}
-			for _, l := range r {
-				b, err := yaml.Marshal(l)
-				if err != nil {
-					klog.Error(err)
-					continue
-				}
-				var item *ActionItem
-				err = yaml.Unmarshal(b, &item)
-				if err != nil {
-					klog.Error(err)
-					continue
-				}
-				if item.ResourceKind == "" {
-					item.ResourceKind = y["kind"].(string)
-				}
-				if item.ResourceName == "" {
-					item.ResourceName = y["metadata"].(map[string]interface{})["name"].(string)
-				}
-				if item.ResourceNamespace == "" {
-					item.ResourceNamespace = y["metadata"].(map[string]interface{})["namespace"].(string)
-				}
-				m.AddonOutput.ActionItems = append(m.AddonOutput.ActionItems, item)
-			}
-
+			m.addActionItem(o, y)
 		}
 	}
 
 	return nil
+}
+
+// addActionItem runs rego against manifest using passed in opa check from bundle and appends to actionItems
+func (m *match) addActionItem(o string, y map[string]interface{}) {
+	r, err := rego.RunRegoForItemV2(context.TODO(), o, y, clientset, nil)
+	if err != nil {
+		klog.Error(err)
+	}
+
+	for _, l := range r {
+		b, err := yaml.Marshal(l)
+		if err != nil {
+			klog.Error(err)
+			continue
+		}
+
+		var i *ActionItem
+
+		err = yaml.Unmarshal(b, &i)
+		if err != nil {
+			klog.Error(err)
+			continue
+		}
+		if i.ResourceKind == "" {
+			i.ResourceKind = y["kind"].(string)
+		}
+		if i.ResourceName == "" {
+			i.ResourceName = y["metadata"].(map[string]interface{})["name"].(string)
+		}
+		if i.ResourceNamespace == "" {
+			i.ResourceNamespace = y["metadata"].(map[string]interface{})["namespace"].(string)
+		}
+		m.AddonOutput.ActionItems = append(m.AddonOutput.ActionItems, i)
+	}
 }
 
 // splitYAML takes a list of Helm manifests and splits them into separate files
@@ -153,4 +159,20 @@ func GetClusterObjects(dynamic dynamic.Interface, ctx context.Context, group str
 	}
 
 	return list.Items, nil
+}
+
+// splitResourcePath takes resource string defined in bundle and splits into separate strings to be passed to apiserver so that we can dynamically look up objects
+func splitResourcePath(path string) {
+	rs := strings.SplitAfter(path, "/")
+
+	if len(rs) == 3 {
+		group = rs[0]
+		version = rs[1]
+		resource = rs[2]
+	} else {
+		group = ""
+		version = rs[0]
+		resource = rs[1]
+	}
+
 }
