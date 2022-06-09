@@ -31,6 +31,9 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/api/core/v1"
+
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 type kube struct {
@@ -122,4 +125,19 @@ func GetNamespaces() *v1.NamespaceList {
 		klog.Error(err)
 	}
 	return ns
+}
+
+// GetClusterObjects returns a list of unstructured.Unstructured objects
+func GetClusterObjects(dynamic dynamic.Interface, ctx context.Context, group string, version string, resource string, namespace string) ([]unstructured.Unstructured, error) {
+	resourceId := schema.GroupVersionResource{
+		Group:    group,
+		Version:  version,
+		Resource: resource,
+	}
+	list, err := dynamic.Resource(resourceId).Namespace(namespace).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		klog.Error(err)
+	}
+
+	return list.Items, nil
 }

@@ -23,11 +23,7 @@ import (
 	"github.com/fairwindsops/hall-monitor/pkg/helm"
 	"github.com/fairwindsops/insights-plugins/plugins/opa/pkg/rego"
 	"gopkg.in/yaml.v3"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/dynamic"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
 )
 
@@ -51,7 +47,7 @@ func (m *match) getClusterManifests() ([]map[string]interface{}, error) {
 		ns := namespace.Name
 		for _, r := range resources {
 			splitResourcePath(r)
-			objs, err := GetClusterObjects(dynamicClient, context.TODO(), group, version, resource, ns)
+			objs, err := helm.GetClusterObjects(dynamicClient, context.TODO(), group, version, resource, ns)
 			if err != nil {
 				klog.Error()
 				continue
@@ -144,21 +140,6 @@ func splitYAML(objects []byte) ([]map[string]interface{}, error) {
 		output = append(output, value)
 	}
 	return output, nil
-}
-
-// GetClusterObjects returns a list of unstructured.Unstructured objects
-func GetClusterObjects(dynamic dynamic.Interface, ctx context.Context, group string, version string, resource string, namespace string) ([]unstructured.Unstructured, error) {
-	resourceId := schema.GroupVersionResource{
-		Group:    group,
-		Version:  version,
-		Resource: resource,
-	}
-	list, err := dynamic.Resource(resourceId).Namespace(namespace).List(ctx, metav1.ListOptions{})
-	if err != nil {
-		klog.Error(err)
-	}
-
-	return list.Items, nil
 }
 
 // splitResourcePath takes resource string defined in bundle and splits into separate strings to be passed to apiserver so that we can dynamically look up objects
