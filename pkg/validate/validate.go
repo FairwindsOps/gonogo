@@ -16,15 +16,22 @@ package validate
 
 import (
 	"encoding/json"
+
+	"github.com/fairwindsops/hall-monitor/pkg/helm"
 )
+
+type Config struct {
+	Helm   *helm.Helm
+	Bundle string
+}
 
 // Validate expects a bundle config, finds matching releases in-cluster,
 // runs pre-defined checks against those releases, and returns an error
-func Validate(bundle string) (string, error) {
+func (c *Config) Validate() (string, error) {
 
 	o := Output{}
 
-	m, err := getMatches(bundle)
+	m, err := c.getMatches()
 	if err != nil {
 		return "", err
 	}

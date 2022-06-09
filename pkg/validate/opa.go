@@ -38,14 +38,13 @@ func (m *match) getClusterManifests() ([]map[string]interface{}, error) {
 	var manifests []map[string]interface{}
 	resources := m.Bundle.Resources
 
-	client := helm.NewHelm()
-	namespaces := client.GetNamespaces()
+	namespaces := m.Helm.GetNamespaces()
 
 	for _, namespace := range namespaces.Items {
 		ns := namespace.Name
 		for _, r := range resources {
 			splitResourcePath(r)
-			objs, err := client.GetClusterObjects(group, version, resource, ns)
+			objs, err := m.Helm.GetClusterObjects(group, version, resource, ns)
 			if err != nil {
 				klog.Error()
 				continue

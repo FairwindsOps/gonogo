@@ -22,6 +22,7 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/klog"
 
+	"github.com/fairwindsops/hall-monitor/pkg/helm"
 	"github.com/fairwindsops/hall-monitor/pkg/validate"
 )
 
@@ -31,7 +32,13 @@ var checkCmd = &cobra.Command{
 	Long:    `Check for Helm releases that can be updated`,
 	PreRunE: validateArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		out, err := validate.Validate(args[0])
+
+		config := &validate.Config{
+			Helm:   helm.NewHelm(),
+			Bundle: args[0],
+		}
+
+		out, err := config.Validate()
 		if err != nil {
 			klog.Error(err)
 		}
