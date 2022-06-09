@@ -31,28 +31,29 @@ type match struct {
 	Bundle      *bundle.Bundle
 	Release     *release.Release
 	AddonOutput *AddonOutput
+
+	Helm *helm.Helm
 }
 
 // matches is a map of matched bundles+releases where the key is the release name
 type matches map[string]match
 
-// getMatches expects a bundle string which is used to find matching in-cluster releases
-func getMatches(b string) (matches, error) {
+// getMatches returns a map of matched releases where the key is the release name
+func (c *Config) getMatches() (matches, error) {
 	// finalMatches is the map that we use to store matches when we find them
 	finalMatches := matches{}
 
-	config, err := bundle.ReadConfig(b)
+	config, err := bundle.ReadConfig(c.Bundle)
 	if err != nil {
 		return nil, err
 	}
 
-	client := helm.NewHelm("")
-	err = client.GetReleasesVersionThree()
+	err = c.Helm.GetReleasesVersionThree()
 	if err != nil {
 		return nil, err
 	}
 
-	for _, release := range client.Releases {
+	for _, release := range c.Helm.Releases {
 		for _, bundle := range config.Addons {
 			if bundle.Source.Chart == release.Chart.Metadata.Name {
 
@@ -84,6 +85,7 @@ func getMatches(b string) (matches, error) {
 								Upgrade: bundle.Versions.End,
 							},
 						},
+						Helm: c.Helm,
 					}
 				}
 			}

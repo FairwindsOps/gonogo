@@ -15,59 +15,56 @@
 package helm
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"sync"
-	"context"
 
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
+
 	// This is required to auth to cloud providers (i.e. GKE)
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
-	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
+	"sigs.k8s.io/controller-runtime/pkg/client/config"
 
 	"k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	v1 "k8s.io/api/core/v1"
-
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
+// kube wraps a kubernetes client interface
 type kube struct {
 	Client kubernetes.Interface
 }
 
+// GetData fulfills the kubernetes client interface in the fairwinds opa package
 func (h *kube) GetData(ctx context.Context, group, kind string) ([]interface{}, error) {
 	return nil, nil
 }
 
-type DynamicClientInstance struct {
-	Client     dynamic.Interface
-	RESTMapper meta.RESTMapper
-}
-
-var kubeClient *kube
-var once sync.Once
-var clientOnceDynamic sync.Once
-var dynamicClient *DynamicClientInstance
-
-// GetConfigInstance returns a Kubernetes interface based on the current configuration
-func GetConfigInstance() *kube {
+// getKubeInstance returns a Kubernetes interface
+func getKubeInstance() *kube {
+	var kubeClient *kube
 	once.Do(func() {
-		if kubeClient == nil {
-			kubeClient = &kube{
-				Client: getKubeClient(),
-			}
+
+		kubeClient = &kube{
+			Client: getKubeClient(),
 		}
+
 	})
 	return kubeClient
 }
 
+type dynamicClientInstance struct {
+	Client     dynamic.Interface
+	RESTMapper meta.RESTMapper
+}
+
+var once sync.Once
+var clientOnceDynamic sync.Once
+
 // getKubeClient returns a clientset instance
-func getKubeClient() kubernetes.Interface {
+func getKubeClient() *kubernetes.Clientset {
 	kubeConf, err := config.GetConfig()
 	if err != nil {
 		fmt.Println("Error getting kubeconfig:", err)
@@ -82,13 +79,13 @@ func getKubeClient() kubernetes.Interface {
 }
 
 // GetDynamicInstance returns a dynamic client instance
-func GetDynamicInstance() *DynamicClientInstance {
+func getDynamicInstance() *dynamicClientInstance {
+	var dynamicClient *dynamicClientInstance
 	clientOnceDynamic.Do(func() {
-		if dynamicClient == nil {
-			dynamicClient = &DynamicClientInstance{
-				Client:     getKubeClientDynamic(),
-				RESTMapper: getRESTMapper(),
-			}
+
+		dynamicClient = &dynamicClientInstance{
+			Client:     getKubeClientDynamic(),
+			RESTMapper: getRESTMapper(),
 		}
 	})
 	return dynamicClient
@@ -116,28 +113,4 @@ func getRESTMapper() meta.RESTMapper {
 		klog.Fatalf("Error creating REST Mapper: %v", err)
 	}
 	return restmapper
-}
-
-// GetNamespaces retrieves a list of namespaces for a cluster
-func GetNamespaces() *v1.NamespaceList {
-	ns, err := kubeClient.Client.CoreV1().Namespaces().List(context.TODO(), metav1.ListOptions{})
-	if err != nil {
-		klog.Error(err)
-	}
-	return ns
-}
-
-// GetClusterObjects returns a list of unstructured.Unstructured objects
-func GetClusterObjects(dynamic dynamic.Interface, ctx context.Context, group string, version string, resource string, namespace string) ([]unstructured.Unstructured, error) {
-	resourceId := schema.GroupVersionResource{
-		Group:    group,
-		Version:  version,
-		Resource: resource,
-	}
-	list, err := dynamic.Resource(resourceId).Namespace(namespace).List(ctx, metav1.ListOptions{})
-	if err != nil {
-		klog.Error(err)
-	}
-
-	return list.Items, nil
 }

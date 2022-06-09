@@ -27,9 +27,6 @@ import (
 	"k8s.io/klog"
 )
 
-var clientset = helm.GetConfigInstance()
-var dynamicClient = helm.GetDynamicInstance().Client
-
 var (
 	group    string
 	version  string
@@ -41,13 +38,13 @@ func (m *match) getClusterManifests() ([]map[string]interface{}, error) {
 	var manifests []map[string]interface{}
 	resources := m.Bundle.Resources
 
-	namespaces := helm.GetNamespaces()
+	namespaces := m.Helm.GetNamespaces()
 
 	for _, namespace := range namespaces.Items {
 		ns := namespace.Name
 		for _, r := range resources {
 			splitResourcePath(r)
-			objs, err := helm.GetClusterObjects(dynamicClient, context.TODO(), group, version, resource, ns)
+			objs, err := m.Helm.GetClusterObjects(group, version, resource, ns)
 			if err != nil {
 				klog.Error()
 				continue
@@ -61,7 +58,7 @@ func (m *match) getClusterManifests() ([]map[string]interface{}, error) {
 }
 
 // RunOPAChecks evaluates rego defined in bundle spec against helm charts and cluster objects and returns an error
-func (m *match) RunOPAChecks() error {
+func (m *match) runOPAChecks() error {
 	if len(m.Bundle.OpaChecks) < 1 {
 		return nil
 	}
@@ -89,7 +86,9 @@ func (m *match) RunOPAChecks() error {
 
 // addActionItem runs rego against manifest using passed in opa check from bundle and appends to actionItems
 func (m *match) addActionItem(o string, y map[string]interface{}) {
-	r, err := rego.RunRegoForItemV2(context.TODO(), o, y, clientset, nil)
+	client := helm.NewHelm()
+
+	r, err := rego.RunRegoForItemV2(context.TODO(), o, y, client.Kube, nil)
 	if err != nil {
 		klog.Error(err)
 	}

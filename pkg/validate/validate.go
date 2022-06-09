@@ -16,26 +16,37 @@ package validate
 
 import (
 	"encoding/json"
+
+	"github.com/fairwindsops/hall-monitor/pkg/helm"
 )
 
-// Validate expects a bundle config, finds matching releases in-cluster,
-// runs pre-defined checks against those releases, and returns an error
-func Validate(bundle string) (string, error) {
+// Config contains the necessary pieces to run the validation
+type Config struct {
+	// Helm is an instance of the local helm package client
+	Helm *helm.Helm
+	// Bundle is the path to the bundle config file
+	Bundle string
+}
+
+// Validate finds matching releases in-cluster,
+// runs pre-defined checks against those releases, and returns an error if any checks fail
+// also returns an output string that can be printed to the user
+func (c *Config) Validate() (string, error) {
 
 	o := Output{}
 
-	m, err := getMatches(bundle)
+	m, err := c.getMatches()
 	if err != nil {
 		return "", err
 	}
 
 	for _, match := range m {
-		err := match.ValidateValues()
+		err := match.validateValues()
 		if err != nil {
 			return "", err
 		}
 
-		err = match.RunOPAChecks()
+		err = match.runOPAChecks()
 		if err != nil {
 			return "", err
 		}
