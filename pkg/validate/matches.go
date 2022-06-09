@@ -46,7 +46,7 @@ func getMatches(b string) (matches, error) {
 		return nil, err
 	}
 
-	client := helm.NewHelm("")
+	client := helm.NewHelm()
 	err = client.GetReleasesVersionThree()
 	if err != nil {
 		return nil, err

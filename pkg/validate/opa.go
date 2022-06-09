@@ -27,9 +27,6 @@ import (
 	"k8s.io/klog"
 )
 
-var clientset = helm.GetConfigInstance()
-var dynamicClient = helm.GetDynamicInstance().Client
-
 var (
 	group    string
 	version  string
@@ -41,13 +38,14 @@ func (m *match) getClusterManifests() ([]map[string]interface{}, error) {
 	var manifests []map[string]interface{}
 	resources := m.Bundle.Resources
 
-	namespaces := helm.GetNamespaces()
+	client := helm.NewHelm()
+	namespaces := client.GetNamespaces()
 
 	for _, namespace := range namespaces.Items {
 		ns := namespace.Name
 		for _, r := range resources {
 			splitResourcePath(r)
-			objs, err := helm.GetClusterObjects(dynamicClient, context.TODO(), group, version, resource, ns)
+			objs, err := client.GetClusterObjects(group, version, resource, ns)
 			if err != nil {
 				klog.Error()
 				continue
