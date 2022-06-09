@@ -87,7 +87,9 @@ func (m *match) RunOPAChecks() error {
 
 // addActionItem runs rego against manifest using passed in opa check from bundle and appends to actionItems
 func (m *match) addActionItem(o string, y map[string]interface{}) {
-	r, err := rego.RunRegoForItemV2(context.TODO(), o, y, clientset, nil)
+	client := helm.NewHelm()
+
+	r, err := rego.RunRegoForItemV2(context.TODO(), o, y, client.Kube, nil)
 	if err != nil {
 		klog.Error(err)
 	}

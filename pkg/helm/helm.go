@@ -27,28 +27,27 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog"
 )
 
 // Helm represents all current releases that we can find in the cluster
 type Helm struct {
 	Releases []*release.Release
-	Kube     *kubernetes.Clientset
-	Dynamic  *DynamicClientInstance
+	Kube     *kube
+	Dynamic  *dynamicClientInstance
 }
 
 // NewHelm returns a basic helm struct
 func NewHelm() *Helm {
 	return &Helm{
-		Kube:    getKubeClient(),
+		Kube:    getKubeInstance(),
 		Dynamic: getDynamicInstance(),
 	}
 }
 
 // GetReleasesVersionThree retrieves helm 3 releases from Secrets
 func (h *Helm) GetReleasesVersionThree() error {
-	hs := driverv3.NewSecrets(h.Kube.CoreV1().Secrets(""))
+	hs := driverv3.NewSecrets(h.Kube.Client.CoreV1().Secrets(""))
 	helmClient := helmstoragev3.Init(hs)
 	namespaces := h.GetNamespaces()
 
@@ -102,7 +101,7 @@ func marshalToRelease(jsonRel []byte) (*release.Release, error) {
 
 // GetNamespaces retrieves a list of namespaces for a cluster
 func (h *Helm) GetNamespaces() *v1.NamespaceList {
-	ns, err := h.Kube.CoreV1().Namespaces().List(context.TODO(), metav1.ListOptions{})
+	ns, err := h.Kube.Client.CoreV1().Namespaces().List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		klog.Error(err)
 	}

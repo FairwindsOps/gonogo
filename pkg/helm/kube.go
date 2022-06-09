@@ -15,6 +15,7 @@
 package helm
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"sync"
@@ -31,7 +32,30 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 )
 
-type DynamicClientInstance struct {
+// kube wraps a kubernetes client interface
+type kube struct {
+	Client kubernetes.Interface
+}
+
+// GetData fulfills the kubernetes client interface in the fairwinds opa package
+func (h *kube) GetData(ctx context.Context, group, kind string) ([]interface{}, error) {
+	return nil, nil
+}
+
+// getKubeInstance returns a Kubernetes interface
+func getKubeInstance() *kube {
+	var kubeClient *kube
+	once.Do(func() {
+
+		kubeClient = &kube{
+			Client: getKubeClient(),
+		}
+
+	})
+	return kubeClient
+}
+
+type dynamicClientInstance struct {
 	Client     dynamic.Interface
 	RESTMapper meta.RESTMapper
 }
@@ -55,11 +79,11 @@ func getKubeClient() *kubernetes.Clientset {
 }
 
 // GetDynamicInstance returns a dynamic client instance
-func getDynamicInstance() *DynamicClientInstance {
-	var dynamicClient *DynamicClientInstance
+func getDynamicInstance() *dynamicClientInstance {
+	var dynamicClient *dynamicClientInstance
 	clientOnceDynamic.Do(func() {
 
-		dynamicClient = &DynamicClientInstance{
+		dynamicClient = &dynamicClientInstance{
 			Client:     getKubeClientDynamic(),
 			RESTMapper: getRESTMapper(),
 		}
