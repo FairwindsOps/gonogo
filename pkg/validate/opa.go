@@ -58,7 +58,7 @@ func (m *match) getClusterManifests() ([]map[string]interface{}, error) {
 }
 
 // RunOPAChecks evaluates rego defined in bundle spec against helm charts and cluster objects and returns an error
-func (m *match) RunOPAChecks() error {
+func (m *match) runOPAChecks() error {
 	if len(m.Bundle.OpaChecks) < 1 {
 		return nil
 	}

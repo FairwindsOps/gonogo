@@ -13,7 +13,9 @@ import (
 	"k8s.io/klog"
 )
 
-func (m *match) ValidateValues() error {
+// validateValues checks the values in the chart aginst the schema in the upstream chart
+// or the schema in the bundle
+func (m *match) validateValues() error {
 	if len(m.Release.Config) < 1 {
 		klog.V(3).Infof("no user values specified for release %s/%s", m.Release.Namespace, m.Release.Name)
 		return nil

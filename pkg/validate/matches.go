@@ -38,7 +38,7 @@ type match struct {
 // matches is a map of matched bundles+releases where the key is the release name
 type matches map[string]match
 
-// getMatches expects a bundle string which is used to find matching in-cluster releases
+// getMatches returns a map of matched releases where the key is the release name
 func (c *Config) getMatches() (matches, error) {
 	// finalMatches is the map that we use to store matches when we find them
 	finalMatches := matches{}
