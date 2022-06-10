@@ -23,41 +23,41 @@ import (
 	"helm.sh/helm/v3/pkg/releaseutil"
 	helmstoragev3 "helm.sh/helm/v3/pkg/storage"
 	driverv3 "helm.sh/helm/v3/pkg/storage/driver"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/klog"
 )
 
 // Helm represents all current releases that we can find in the cluster
 type Helm struct {
-	Releases  []*release.Release
-	Kube      *kube
-	Namespace string
+	Releases []*release.Release
+	Kube     *kube
+	Dynamic  *dynamicClientInstance
 }
 
 // NewHelm returns a basic helm struct
-func NewHelm(namespace string) *Helm {
+func NewHelm() *Helm {
 	return &Helm{
-		Kube:      getConfigInstance(),
-		Namespace: namespace,
+		Kube:    getKubeInstance(),
+		Dynamic: getDynamicInstance(),
 	}
 }
 
 // GetReleasesVersionThree retrieves helm 3 releases from Secrets
 func (h *Helm) GetReleasesVersionThree() error {
-	hs := driverv3.NewSecrets(h.Kube.Client.CoreV1().Secrets(h.Namespace))
+	hs := driverv3.NewSecrets(h.Kube.Client.CoreV1().Secrets(""))
 	helmClient := helmstoragev3.Init(hs)
-	namespaces, err := h.Kube.Client.CoreV1().Namespaces().List(context.TODO(), metav1.ListOptions{})
-	if err != nil {
-		return err
-	}
+	namespaces := h.GetNamespaces()
+
 	releases, err := helmClient.ListDeployed()
 	if err != nil {
 		return err
 	}
 	for _, namespace := range namespaces.Items {
 		ns := namespace.Name
-		if h.Namespace != "" && ns != h.Namespace {
-			continue
-		}
+
 		filteredReleases := h.deployedReleasesPerNamespace(ns, releases)
 		for _, r := range filteredReleases {
 			rel, err := helmToRelease(r)
@@ -97,4 +97,28 @@ func marshalToRelease(jsonRel []byte) (*release.Release, error) {
 	var ret = new(release.Release)
 	err := json.Unmarshal(jsonRel, ret)
 	return ret, err
+}
+
+// GetNamespaces retrieves a list of namespaces for a cluster
+func (h *Helm) GetNamespaces() *v1.NamespaceList {
+	ns, err := h.Kube.Client.CoreV1().Namespaces().List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		klog.Error(err)
+	}
+	return ns
+}
+
+// GetClusterObjects returns a list of unstructured.Unstructured objects
+func (h *Helm) GetClusterObjects(group string, version string, resource string, namespace string) ([]unstructured.Unstructured, error) {
+	resourceId := schema.GroupVersionResource{
+		Group:    group,
+		Version:  version,
+		Resource: resource,
+	}
+	list, err := h.Dynamic.Client.Resource(resourceId).Namespace(namespace).List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		klog.Error(err)
+	}
+
+	return list.Items, nil
 }

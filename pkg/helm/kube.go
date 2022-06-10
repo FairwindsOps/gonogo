@@ -15,36 +15,56 @@
 package helm
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"sync"
 
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/klog/v2"
+
 	// This is required to auth to cloud providers (i.e. GKE)
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
+	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
+
+	"k8s.io/apimachinery/pkg/api/meta"
 )
 
+// kube wraps a kubernetes client interface
 type kube struct {
 	Client kubernetes.Interface
 }
 
-var kubeClient *kube
-var once sync.Once
+// GetData fulfills the kubernetes client interface in the fairwinds opa package
+func (h *kube) GetData(ctx context.Context, group, kind string) ([]interface{}, error) {
+	return nil, nil
+}
 
-// GetConfigInstance returns a Kubernetes interface based on the current configuration
-func getConfigInstance() *kube {
+// getKubeInstance returns a Kubernetes interface
+func getKubeInstance() *kube {
+	var kubeClient *kube
 	once.Do(func() {
-		if kubeClient == nil {
-			kubeClient = &kube{
-				Client: getKubeClient(),
-			}
+
+		kubeClient = &kube{
+			Client: getKubeClient(),
 		}
+
 	})
 	return kubeClient
 }
 
-func getKubeClient() kubernetes.Interface {
+type dynamicClientInstance struct {
+	Client     dynamic.Interface
+	RESTMapper meta.RESTMapper
+}
+
+var once sync.Once
+var clientOnceDynamic sync.Once
+
+// getKubeClient returns a clientset instance
+func getKubeClient() *kubernetes.Clientset {
 	kubeConf, err := config.GetConfig()
 	if err != nil {
 		fmt.Println("Error getting kubeconfig:", err)
@@ -56,4 +76,41 @@ func getKubeClient() kubernetes.Interface {
 		os.Exit(1)
 	}
 	return clientset
+}
+
+// GetDynamicInstance returns a dynamic client instance
+func getDynamicInstance() *dynamicClientInstance {
+	var dynamicClient *dynamicClientInstance
+	clientOnceDynamic.Do(func() {
+
+		dynamicClient = &dynamicClientInstance{
+			Client:     getKubeClientDynamic(),
+			RESTMapper: getRESTMapper(),
+		}
+	})
+	return dynamicClient
+}
+
+func getKubeClientDynamic() dynamic.Interface {
+	kubeConf, err := config.GetConfig()
+	if err != nil {
+		klog.Fatalf("Error getting kubeconfig: %v", err)
+	}
+	clientset, err := dynamic.NewForConfig(kubeConf)
+	if err != nil {
+		klog.Fatalf("Error creating dynamic kubernetes client: %v", err)
+	}
+	return clientset
+}
+
+func getRESTMapper() meta.RESTMapper {
+	kubeConf, err := config.GetConfig()
+	if err != nil {
+		klog.Fatalf("Error getting kubeconfig: %v", err)
+	}
+	restmapper, err := apiutil.NewDynamicRESTMapper(kubeConf)
+	if err != nil {
+		klog.Fatalf("Error creating REST Mapper: %v", err)
+	}
+	return restmapper
 }
