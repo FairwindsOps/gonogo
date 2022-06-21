@@ -51,6 +51,11 @@ func (c *Config) Validate() (string, error) {
 			return "", err
 		}
 
+		err = match.checkClusterVersion()
+		if err != nil {
+			return "", err
+		}
+
 		o.Addons = append(o.Addons, match.AddonOutput)
 	}
 
