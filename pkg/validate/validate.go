@@ -40,6 +40,11 @@ func (c *Config) Validate() (string, error) {
 		return "", err
 	}
 
+	clusterVersion, err := c.Helm.GetClusterVersion()
+	if err != nil {
+		return "", err
+	}
+
 	for _, match := range m {
 		err := match.validateValues()
 		if err != nil {
@@ -51,7 +56,7 @@ func (c *Config) Validate() (string, error) {
 			return "", err
 		}
 
-		err = match.checkClusterVersion()
+		err = match.validateClusterVersion(clusterVersion)
 		if err != nil {
 			return "", err
 		}

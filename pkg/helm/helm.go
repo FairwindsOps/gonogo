@@ -27,6 +27,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/version"
 	"k8s.io/klog"
 )
 
@@ -121,4 +122,12 @@ func (h *Helm) GetClusterObjects(group string, version string, resource string, 
 	}
 
 	return list.Items, nil
+}
+
+func (h *Helm) GetClusterVersion() (*version.Info, error) {
+	serverVersion, err := h.Kube.Client.Discovery().ServerVersion()
+	if err != nil {
+		return nil, err
+	}
+	return serverVersion, nil
 }

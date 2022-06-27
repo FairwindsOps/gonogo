@@ -1,25 +1,36 @@
 package validate
 
 import (
-	"k8s.io/client-go/discovery"
-	"fmt"
-	"sigs.k8s.io/controller-runtime/pkg/client/config"
+	"github.com/blang/semver/v4"
+	clusterVersion "k8s.io/apimachinery/pkg/version"
+	"k8s.io/klog"
 )
 
-func (m* match) checkClusterVersion() error {
-	cfg := config.GetConfigOrDie()
+func (m *match) validateClusterVersion(cv *clusterVersion.Info) error {
 
-	client, err := discovery.NewDiscoveryClientForConfig(cfg)
+	maxVer, err := semver.ParseTolerant(m.Bundle.CompatibleK8sVersions.Max)
 	if err != nil {
-		return err
+		klog.Error(err)
 	}
 
-	version, err := client.ServerVersion()
+	minVer, err := semver.ParseTolerant(m.Bundle.CompatibleK8sVersions.Min)
 	if err != nil {
-		return  err
+		klog.Error(err)
 	}
-	fmt.Println(version)
 
-	
+	clusterVer, err := semver.ParseTolerant(cv.String())
+	if err != nil {
+		klog.Error(err)
+	}
+
+	if clusterVer.LT(minVer) || clusterVer.GT(maxVer) {
+		m.AddonOutput.ActionItems = append(m.AddonOutput.ActionItems, &ActionItem{
+			ResourceNamespace: m.Release.Namespace,
+			ResourceName:      m.Release.Name,
+			Title:             "Unsupported cluster version",
+			Description:       "The Kubernetes cluster version is less or greater than the minimum and maximum versions specified in the bundle spec",
+		})
+
+	}
 	return nil
 }

@@ -40,7 +40,7 @@ func TestReadConfig(t *testing.T) {
 						Notes:                 "A text field with general notes",
 						Source:                Source{"metrics-server", "https://charts.bitnami.com/bitnami"},
 						Warnings:              []string{"warning 1", "warning 2"},
-						CompatibleK8SVersions: []string{"1.20", "1.18"},
+						CompatibleK8sVersions: K8sVersions{"1.20", "1.18"},
 						NecessaryAPIVersions:  []string{"apps/v1", "core/v1"},
 						ValuesSchema:          "",
 						OpaChecks:             []string{"Type From the existing OPA Package", "OPACustomCheck", "Handle resources"},

@@ -4,6 +4,7 @@ go 1.17
 
 require (
 	github.com/blang/semver/v4 v4.0.0
+	github.com/coreos/go-semver v0.3.0
 	github.com/fairwindsops/insights-plugins/plugins/opa v0.0.0-20220531140640-0ed7a0a1442b
 	github.com/spf13/cobra v1.3.0
 	github.com/spf13/pflag v1.0.5

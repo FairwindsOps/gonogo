@@ -40,6 +40,11 @@ type BundleConfig struct {
 	Addons []*Bundle `yaml:"addons"`
 }
 
+type K8sVersions struct {
+	Min string `yaml:"min"`
+	Max string `yaml:"max"`
+}
+
 // Bundle maps the fields from a supplied bundle spec file
 type Bundle struct {
 	Name                  string   `yaml:"name"`                    // name of the helm release
@@ -47,7 +52,7 @@ type Bundle struct {
 	Notes                 string   `yaml:"notes"`                   // strings of general notes
 	Source                Source   `yaml:"source"`                  // chart name and repository for helm release
 	Warnings              []string `yaml:"warnings"`                // strings of warning messages
-	CompatibleK8SVersions []string `yaml:"compatible_k8s_versions"` // kubernetes cluster version to check for
+	CompatibleK8sVersions K8sVersions `yaml:"compatible_k8s_versions"` // kubernetes cluster version to check for
 	NecessaryAPIVersions  []string `yaml:"necessary_api_versions"`  // specific api versions to check for
 	ValuesSchema          string   `yaml:"values_schema"`           // embedded values.schema.json
 	OpaChecks             []string `yaml:"opa_checks"`              // embedded rego code
