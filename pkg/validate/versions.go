@@ -1,6 +1,8 @@
 package validate
 
 import (
+	"fmt"
+
 	"github.com/blang/semver/v4"
 	clusterVersion "k8s.io/apimachinery/pkg/version"
 	"k8s.io/klog"
@@ -32,5 +34,32 @@ func (m *match) validateClusterVersion(cv *clusterVersion.Info) error {
 		})
 
 	}
+	return nil
+}
+
+func (m *match) validateAPIVersion() error {
+	// av := m.Bundle.NecessaryAPIVersions
+	a, err := m.Helm.Kube.Client.Discovery().ServerGroups()
+	if err != nil {
+		return err
+	}
+
+	for _, l := range a. {
+		fmt.Println(l)
+	}
+
+	fmt.Printf("The var a is: %v\n", a)
+
+	// for _, v := range av {
+	// 	if v does not exist in the cluster {
+	// 		m.AddonOutput.ActionItems = append(m.AddonOutput.ActionItems, &ActionItem{
+	// 			ResourceNamespace: m.Release.Namespace,
+	// 			ResourceName:      m.Release.Name,
+	// 			Title:             fmt.Sprintf("API version %s is not available", v),
+	// 			Description:       fmt.Sprintf("The Kubernetes cluster version does not contain the api %s", v),
+	// 		})
+	// 	}
+	// }
+
 	return nil
 }
