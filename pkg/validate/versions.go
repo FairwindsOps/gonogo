@@ -6,7 +6,9 @@ import (
 	"github.com/blang/semver/v4"
 	clusterVersion "k8s.io/apimachinery/pkg/version"
 	"k8s.io/klog"
+	"github.com/thoas/go-funk"
 )
+
 
 func (m *match) validateClusterVersion(cv *clusterVersion.Info) error {
 
@@ -37,29 +39,20 @@ func (m *match) validateClusterVersion(cv *clusterVersion.Info) error {
 	return nil
 }
 
-func (m *match) validateAPIVersion() error {
-	// av := m.Bundle.NecessaryAPIVersions
-	a, err := m.Helm.Kube.Client.Discovery().ServerGroups()
-	if err != nil {
-		return err
+func (m *match) validateAPIVersion(v []string) {
+	apiVersions := m.Bundle.NecessaryAPIVersions
+
+	for _, av := range apiVersions {
+		if ! funk.Contains(v, av) {
+			m.AddonOutput.ActionItems = append(m.AddonOutput.ActionItems, &ActionItem{
+				ResourceNamespace: m.Release.Namespace,
+				ResourceName:      m.Release.Name,
+				Title:             fmt.Sprintf("API version %s is not available",av),
+				Description:       fmt.Sprintf("The Kubernetes cluster version does not contain the api %s", av),
+			})
+		} else {
+			klog.V(5).Infof("found required apiversion %s", av)
+		}
 	}
 
-	for _, l := range a. {
-		fmt.Println(l)
-	}
-
-	fmt.Printf("The var a is: %v\n", a)
-
-	// for _, v := range av {
-	// 	if v does not exist in the cluster {
-	// 		m.AddonOutput.ActionItems = append(m.AddonOutput.ActionItems, &ActionItem{
-	// 			ResourceNamespace: m.Release.Namespace,
-	// 			ResourceName:      m.Release.Name,
-	// 			Title:             fmt.Sprintf("API version %s is not available", v),
-	// 			Description:       fmt.Sprintf("The Kubernetes cluster version does not contain the api %s", v),
-	// 		})
-	// 	}
-	// }
-
-	return nil
 }

@@ -45,6 +45,11 @@ func (c *Config) Validate() (string, error) {
 		return "", err
 	}
 
+	clusterAPIVersions, err := c.createVersionSlice()
+		if err != nil {
+			return "", err
+		}
+
 	for _, match := range m {
 		err := match.validateValues()
 		if err != nil {
@@ -61,10 +66,7 @@ func (c *Config) Validate() (string, error) {
 			return "", err
 		}
 
-		err = match.validateAPIVersion()
-		if err != nil {
-			return "", err
-		}
+		match.validateAPIVersion(clusterAPIVersions)
 
 		o.Addons = append(o.Addons, match.AddonOutput)
 	}
@@ -76,4 +78,22 @@ func (c *Config) Validate() (string, error) {
 
 	return string(out), err
 
+}
+
+
+func (c *Config) createVersionSlice() ([]string, error) {
+	a, err := c.Helm.Kube.Client.Discovery().ServerGroups()
+	if err != nil {
+		return nil, err
+	}
+
+	var groupSlice []string
+
+	for _, groups := range a.Groups {
+		for _, v := range groups.Versions {
+			groupSlice = append(groupSlice, v.GroupVersion)
+			}
+		}
+
+	return groupSlice, nil
 }

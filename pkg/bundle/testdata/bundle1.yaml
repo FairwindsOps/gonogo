@@ -16,7 +16,8 @@ addons:
     min: 1.18
   necessary_api_versions:
   - apps/v1
-  - core/v1
+  - v1
+  - chickenfingers/v1
   values_schema: |
     {
       "$schema": "http://json-schema.org/schema#",
