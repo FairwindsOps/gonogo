@@ -12,8 +12,7 @@ addons:
   - "warning 1"
   - "warning 2"
   compatible_k8s_versions:
-  - 1.20
-  - 1.18
+    max: 1.18
   necessary_api_versions:
   - apps/v1
   - core/v1
@@ -55,8 +54,8 @@ addons:
   - "warning 1"
   - "warning 2"
   compatible_k8s_versions:
-  - 1.20
-  - 1.18
+    max: 1.20
+    min: 1.18
   necessary_api_versions:
   - apps/v1
   - core/v1
@@ -78,8 +77,8 @@ addons:
   - "warning 1"
   - "warning 2"
   compatible_k8s_versions:
-  - 1.20
-  - 1.18
+    max: 1.20
+    min: 1.18
   necessary_api_versions:
   - apps/v1
   - core/v1
@@ -98,8 +97,8 @@ addons:
   - "warning 1"
   - "warning 2"
   compatible_k8s_versions:
-  - 1.20
-  - 1.18
+    max: 1.20
+    min: 1.18
   necessary_api_versions:
   - apps/v1
   - core/v1
@@ -110,10 +109,8 @@ addons:
     start: 3.15.2
     end: 4.0.12
   compatible_k8s_versions:
-  - 1.19
-  - 1.20
-  - 1.21
-  - 1.22
+    max: 1.22
+    min: 1.19
   source:
     chart: ingress-nginx
     repository: https://kubernetes.github.io/ingress-nginx
@@ -131,8 +128,8 @@ addons:
   - "warning 1"
   - "warning 2"
   compatible_k8s_versions:
-  - 1.20
-  - 1.18
+    max: 1.21
+    min: 1.18
   necessary_api_versions:
   - apps/v1
   - core/v1
