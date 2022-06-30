@@ -46,9 +46,9 @@ func (c *Config) Validate() (string, error) {
 	}
 
 	clusterAPIVersions, err := c.createVersionSlice()
-		if err != nil {
-			return "", err
-		}
+	if err != nil {
+		return "", err
+	}
 
 	for _, match := range m {
 		err := match.validateValues()
@@ -80,7 +80,6 @@ func (c *Config) Validate() (string, error) {
 
 }
 
-
 func (c *Config) createVersionSlice() ([]string, error) {
 	a, err := c.Helm.Kube.Client.Discovery().ServerGroups()
 	if err != nil {
@@ -92,8 +91,8 @@ func (c *Config) createVersionSlice() ([]string, error) {
 	for _, groups := range a.Groups {
 		for _, v := range groups.Versions {
 			groupSlice = append(groupSlice, v.GroupVersion)
-			}
 		}
+	}
 
 	return groupSlice, nil
 }
