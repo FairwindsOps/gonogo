@@ -3,7 +3,6 @@ package validate
 import (
 	"github.com/blang/semver/v4"
 	clusterVersion "k8s.io/apimachinery/pkg/version"
-	"k8s.io/klog"
 )
 
 func (m *match) validateClusterVersion(cv *clusterVersion.Info) error {
@@ -12,13 +11,13 @@ func (m *match) validateClusterVersion(cv *clusterVersion.Info) error {
 
 	clusterVer, err = semver.ParseTolerant(cv.String())
 	if err != nil {
-		klog.Error(err)
+		return err
 	}
 
 	if len(m.Bundle.CompatibleK8sVersions.Max) != 0 {
 		maxVer, err = semver.ParseTolerant(m.Bundle.CompatibleK8sVersions.Max)
 		if err != nil {
-			klog.Error(err)
+			return err
 		}
 		if clusterVer.GT(maxVer) {
 			m.AddonOutput.ActionItems = append(m.AddonOutput.ActionItems, &ActionItem{
@@ -33,7 +32,7 @@ func (m *match) validateClusterVersion(cv *clusterVersion.Info) error {
 	if len(m.Bundle.CompatibleK8sVersions.Min) != 0 {
 		minVer, err = semver.ParseTolerant(m.Bundle.CompatibleK8sVersions.Min)
 		if err != nil {
-			klog.Error(err)
+			return err
 		}
 		if clusterVer.LT(minVer) {
 			m.AddonOutput.ActionItems = append(m.AddonOutput.ActionItems, &ActionItem{
