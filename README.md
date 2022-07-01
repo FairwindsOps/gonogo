@@ -14,6 +14,41 @@ A number factors can affect whether the upgrade of an addon (like cert-manager, 
 
 For example, `cert-manager` [changed a number of annotations](https://cert-manager.io/docs/installation/upgrading/upgrading-0.10-0.11/#additional-annotation-changes) in the upgrade from `0.10` to `0.11`.With Hall Monitor you can add an OPA check to your bundle spec looking for instances of that annotation in the affected cluster resources and be warned about it before you do the upgrade.
 
+## Documentation
+
+# Installation
+TBD
+
+# Usage
+// Using hall-monitor for the command here as a placeholder
+```
+hall-monitor --help
+The Kubernetes Add-On Upgrade Validation Bundle is a spec that can be used to define and then discover if an add-on upgrade is safe to perform.
+
+Usage:
+  hall-monitor [flags]
+  hall-monitor [command]
+
+Available Commands:
+  check       Check for Helm releases that can be updated
+  completion  Generate the autocompletion script for the specified shell
+  help        Help about any command
+  version     Prints the current version of the tool.
+
+Flags:
+  -h, --help      help for hall-monitor
+  -v, --v Level   number for the log level verbosity
+
+Use "hall-monitor [command] --help" for more information about a command.
+```
+
+Pass in a bundle spec with the addon definitions that you want to check
+```
+hall-monitor check /path/to/bundle/bundle.yaml
+```
+
+
+
 <!-- Begin boilerplate -->
 ## Join the Fairwinds Open Source Community
 
