@@ -31,19 +31,19 @@ func TestReadConfig(t *testing.T) {
 	}{
 		{
 			name: "bundle1",
-			file: "testdata/bundle1.yaml",
+			file: "testdata/bundle_read_check.yaml",
 			want: &BundleConfig{
 				Addons: []*Bundle{
 					{
 						Name:                  "metrics-server",
-						Versions:              Versions{"1.1.0", "1.2.0"},
+						Versions:              Versions{"5.10.2", "5.10.14"},
 						Notes:                 "A text field with general notes",
 						Source:                Source{"metrics-server", "https://charts.bitnami.com/bitnami"},
 						Warnings:              []string{"warning 1", "warning 2"},
-						CompatibleK8sVersions: K8sVersions{"1.20", "1.18"},
-						NecessaryAPIVersions:  []string{"apps/v1", "core/v1"},
+						CompatibleK8sVersions: K8sVersions{"1.18", "1.20"},
+						NecessaryAPIVersions:  []string{"apps/v1", "v1"},
 						ValuesSchema:          "",
-						OpaChecks:             []string{"Type From the existing OPA Package", "OPACustomCheck", "Handle resources"},
+						OpaChecks:             []string{"Check One", "Check Two"},
 					},
 				},
 			},
