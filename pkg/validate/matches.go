@@ -17,8 +17,8 @@ package validate
 import (
 	"fmt"
 
-	"github.com/fairwindsops/hall-monitor/pkg/bundle"
-	"github.com/fairwindsops/hall-monitor/pkg/helm"
+	"github.com/fairwindsops/gonogo/pkg/bundle"
+	"github.com/fairwindsops/gonogo/pkg/helm"
 	"github.com/thoas/go-funk"
 	"helm.sh/helm/v3/pkg/release"
 	"k8s.io/klog"
