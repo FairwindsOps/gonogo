@@ -76,7 +76,7 @@ or
 
 <a href="https://www.fairwinds.com/t-shirt-offer?utm_source=gonogo&utm_medium=gonogo&utm_campaign=gonogo-tshirt">
 
-  <img src="https://www.fairwinds.com/hubfs/Doc_Banners/Fairwinds_OSS_User_Group_740x125_v6.png" alt="Love Fairwinds Open Source? Share your business email and job title and we'll send you>
+ <img src="https://www.fairwinds.com/hubfs/Doc_Banners/Fairwinds_OSS_User_Group_740x125_v6.png" alt="Love Fairwinds Open Source? Share your business email and job title and we'll send you a free Fairwinds t-shirt!" />
 </a>
 
 ## Other Projects from Fairwinds
