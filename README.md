@@ -1,4 +1,3 @@
-
 <div align="center" class="no-border">
   <img src="/img/gonogo-logo.png" alt="GoNoGo Logo">
   <br>
@@ -40,7 +39,6 @@ The Kubernetes Add-On Upgrade Validation Bundle is a spec that can be used to de
 Usage:
   gonogo [flags]
   gonogo [command]
-
 
 Available Commands:
   check       Check for Helm releases that can be updated
@@ -92,5 +90,4 @@ Enjoying GoNoGo? Check out some of our other projects:
 * [rbac-manager](https://github.com/FairwindsOps/rbac-manager) - Simplify the management of RBAC in your Kubernetes clusters
 
 Or [check out the full list](https://www.fairwinds.com/open-source-software?utm_source=gonogo&utm_medium=gonogo&utm_campaign=gonogo)
-
 
