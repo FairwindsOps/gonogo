@@ -1,4 +1,4 @@
-module github.com/fairwindsops/hall-monitor
+module github.com/fairwindsops/gonogo
 
 go 1.17
 
