@@ -1,6 +1,23 @@
-# GoNoGo
+<div align="center" class="no-border">
+  <img src="/img/gonogo-logo.png" alt="GoNoGo Logo">
+  <br>
+  <h3>Determine the upgrade confidence of your cluster addons.</h3>
+  <a href="https://github.com/FairwindsOps/pluto/releases">
+    <img src="https://img.shields.io/github/v/release/FairwindsOps/pluto">
+  </a>
+  <a href="https://goreportcard.com/report/github.com/FairwindsOps/pluto">
+    <img src="https://goreportcard.com/badge/github.com/FairwindsOps/pluto">
+  </a>
+  <a href="https://circleci.com/gh/FairwindsOps/pluto.svg">
+    <img src="https://circleci.com/gh/FairwindsOps/pluto.svg?style=svg">
+  </a>
+  <a href="https://insights.fairwinds.com/gh/FairwindsOps/pluto">
+    <img src="https://insights.fairwinds.com/v0/gh/FairwindsOps/pluto/badge.svg">
+  </a>
+</div>
 
-GoNoGo is a go/no go utility to help users determine whether a specific cluster addon is ready for upgrade.
+
+GoNoGo is a utility to help users determine upgrade confidence around Kubernetes cluster addons.
 
 ## Purpose
 A number factors can affect whether the upgrade of an addon (like cert-manager, nginx ingress, etc) will be successful or not. For example, some addon upgrades require a specific api to be available in the cluster, or a specific version of the Kubernetes cluster in general. Or perhaps an addon has deprecated a particular annotation and you want to make sure your upgraded addon doesn't include those deprecated annotations. Rather than having to manually assess each addon, GoNoGo enables you to create a specification (called a bundle spec) that you can populate with checks for the upgraded version, and run those against your cluster to get an upgrade confidence score.
