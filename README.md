@@ -1,9 +1,9 @@
-# Hall Monitor
+# GoNoGo
 
-Hall Monitor is a go/no go utility to help users determine whether a specific cluster addon is ready for upgrade.
+GoNoGo is a go/no go utility to help users determine whether a specific cluster addon is ready for upgrade.
 
 ## Purpose
-A number factors can affect whether the upgrade of an addon (like cert-manager, nginx ingress, etc) will be successful or not. For example, some addon upgrades require a specific api to be available in the cluster, or a specific version of the Kubernetes cluster in general. Or perhaps an addon has deprecated a particular annotation and you want to make sure your upgraded addon doesn't include those deprecated annotations. Rather than having to manually assess each addon, Hall Monitor enables you to create a specification (called a bundle spec) that you can populate with checks for the upgraded version, and run those against your cluster to get an upgrade confidence score.
+A number factors can affect whether the upgrade of an addon (like cert-manager, nginx ingress, etc) will be successful or not. For example, some addon upgrades require a specific api to be available in the cluster, or a specific version of the Kubernetes cluster in general. Or perhaps an addon has deprecated a particular annotation and you want to make sure your upgraded addon doesn't include those deprecated annotations. Rather than having to manually assess each addon, GoNoGo enables you to create a specification (called a bundle spec) that you can populate with checks for the upgraded version, and run those against your cluster to get an upgrade confidence score.
 
 For example, `cert-manager` [changed a number of annotations](https://cert-manager.io/docs/installation/upgrading/upgrading-0.10-0.11/#additional-annotation-changes) in the upgrade from `0.10` to `0.11`.With Hall Monitor you can add an OPA check to your bundle spec looking for instances of that annotation in the affected cluster resources and be warned about it before you do the upgrade.
 
@@ -13,14 +13,13 @@ For example, `cert-manager` [changed a number of annotations](https://cert-manag
 TBD
 
 # Usage
-// Using hall-monitor for the command here as a placeholder
-```
-hall-monitor --help
+
+gonogo --help
 The Kubernetes Add-On Upgrade Validation Bundle is a spec that can be used to define and then discover if an add-on upgrade is safe to perform.
 
 Usage:
-  hall-monitor [flags]
-  hall-monitor [command]
+  gonogo [flags]
+  gonogo [command]
 
 Available Commands:
   check       Check for Helm releases that can be updated
@@ -29,15 +28,15 @@ Available Commands:
   version     Prints the current version of the tool.
 
 Flags:
-  -h, --help      help for hall-monitor
+  -h, --help      help for gonogo
   -v, --v Level   number for the log level verbosity
 
-Use "hall-monitor [command] --help" for more information about a command.
+Use "gonogo [command] --help" for more information about a command.
 ```
 
 Pass in a bundle spec with the addon definitions that you want to check
 ```
-hall-monitor check /path/to/bundle/bundle.yaml
+gonogo check /path/to/bundle/bundle.yaml
 ```
 
 
