@@ -57,7 +57,7 @@ func (m *match) validateValues() error {
 	if len(repoSchema) > 0 {
 		err := chartutil.ValidateAgainstSingleSchema(cv, repoSchema)
 		if err != nil {
-			klog.V(3).Infof("schema validation failed for release ", m.Release.Namespace, "/", m.Release.Name, err)
+			klog.V(3).Infof("schema validation failed for release %v/%v: %v", m.Release.Namespace, m.Release.Name, err)
 			m.AddonOutput.ActionItems = append(m.AddonOutput.ActionItems, &ActionItem{
 				ResourceNamespace: m.Release.Namespace,
 				ResourceName:      m.Release.Name,

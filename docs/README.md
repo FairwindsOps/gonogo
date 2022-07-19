@@ -1,19 +1,18 @@
-
 <div align="center" class="no-border">
   <img src="/img/gonogo-logo.png" alt="GoNoGo Logo">
   <br>
   <h3>Determine the upgrade confidence of your cluster addons.</h3>
-  <a href="https://github.com/FairwindsOps/gonogo/releases">
-    <img src="https://img.shields.io/github/v/release/FairwindsOps/gonogo">
+  <a href="https://github.com/FairwindsOps/pluto/releases">
+    <img src="https://img.shields.io/github/v/release/FairwindsOps/pluto">
   </a>
-  <a href="https://goreportcard.com/report/github.com/FairwindsOps/gonogo">
-    <img src="https://goreportcard.com/badge/github.com/FairwindsOps/gonogo">
+  <a href="https://goreportcard.com/report/github.com/FairwindsOps/pluto">
+    <img src="https://goreportcard.com/badge/github.com/FairwindsOps/pluto">
   </a>
-  <a href="https://circleci.com/gh/FairwindsOps/gonogo.svg">
-    <img src="https://circleci.com/gh/FairwindsOps/gonogo.svg?style=svg">
+  <a href="https://circleci.com/gh/FairwindsOps/pluto.svg">
+    <img src="https://circleci.com/gh/FairwindsOps/pluto.svg?style=svg">
   </a>
-  <a href="https://insights.fairwinds.com/gh/FairwindsOps/gonogo">
-    <img src="https://insights.fairwinds.com/v0/gh/FairwindsOps/gonogo/badge.svg">
+  <a href="https://insights.fairwinds.com/gh/FairwindsOps/pluto">
+    <img src="https://insights.fairwinds.com/v0/gh/FairwindsOps/pluto/badge.svg">
   </a>
 </div>
 
@@ -27,8 +26,6 @@ For example, `cert-manager` [changed a number of annotations](https://cert-manag
 
 ## Documentation
 
-Check out the [documentation at docs.fairwinds.com](https://gonogo.docs.fairwinds.com)
-
 # Installation
 TBD
 
@@ -41,7 +38,6 @@ Usage:
   gonogo [flags]
   gonogo [command]
 
-
 Available Commands:
   check       Check for Helm releases that can be updated
   completion  Generate the autocompletion script for the specified shell
@@ -49,19 +45,15 @@ Available Commands:
   version     Prints the current version of the tool.
 
 Flags:
-
   -h, --help      help for gonogo
   -v, --v Level   number for the log level verbosity
 
 Use "gonogo [command] --help" for more information about a command.
-
 ```
 
 Pass in a bundle spec with the addon definitions that you want to check
 ```
-
 gonogo check /path/to/bundle/bundle.yaml
-
 ```
 
 
@@ -75,22 +67,28 @@ and network with fellow Kubernetes users.
 or
 [join the user group](https://www.fairwinds.com/open-source-software-user-group) to get involved!
 
-
-<a href="https://www.fairwinds.com/t-shirt-offer?utm_source=gonogo&utm_medium=gonogo&utm_campaign=gonogo-tshirt">
-
+<a href="https://www.fairwinds.com/t-shirt-offer?utm_source=pluto&utm_medium=pluto&utm_campaign=pluto-tshirt">
   <img src="https://www.fairwinds.com/hubfs/Doc_Banners/Fairwinds_OSS_User_Group_740x125_v6.png" alt="Love Fairwinds Open Source? Share your business email and job title and we'll send you>
 </a>
 
 ## Other Projects from Fairwinds
 
-
-Enjoying GoNoGo? Check out some of our other projects:
-
+Enjoying Pluto? Check out some of our other projects:
 * [Polaris](https://github.com/FairwindsOps/Polaris) - Audit, enforce, and build policies for Kubernetes resources, including over 20 built-in checks for best practices
 * [Goldilocks](https://github.com/FairwindsOps/Goldilocks) - Right-size your Kubernetes Deployments by compare your memory and CPU settings against actual usage
 * [Nova](https://github.com/FairwindsOps/Nova) - Check to see if any of your Helm charts have updates available
 * [rbac-manager](https://github.com/FairwindsOps/rbac-manager) - Simplify the management of RBAC in your Kubernetes clusters
 
-Or [check out the full list](https://www.fairwinds.com/open-source-software?utm_source=gonogo&utm_medium=gonogo&utm_campaign=gonogo)
+Or [check out the full list](https://www.fairwinds.com/open-source-software?utm_source=pluto&utm_medium=pluto&utm_campaign=pluto)
+## Fairwinds Insights
+If you're interested in running Pluto in multiple clusters,
+tracking the results over time, integrating with Slack, Datadog, and Jira,
+or unlocking other functionality, check out
+[Fairwinds Insights](https://www.fairwinds.com/pluto-user-insights-demo?utm_source=pluto&utm_medium=pluto&utm_campaign=pluto),
+a platform for auditing and enforcing policy in Kubernetes clusters.
+
+<a href="https://www.fairwinds.com/pluto-user-insights-demo?utm_source=pluto&utm_medium=ad&utm_campaign=plutoad">
+  <img src="https://www.fairwinds.com/hubfs/Doc_Banners/Fairwinds_Pluto_Ad.png" alt="Fairwinds Insights" />
+</a>
 
 

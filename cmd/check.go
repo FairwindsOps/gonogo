@@ -22,8 +22,8 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/klog"
 
-	"github.com/fairwindsops/hall-monitor/pkg/helm"
-	"github.com/fairwindsops/hall-monitor/pkg/validate"
+	"github.com/fairwindsops/gonogo/pkg/helm"
+	"github.com/fairwindsops/gonogo/pkg/validate"
 )
 
 var checkCmd = &cobra.Command{
