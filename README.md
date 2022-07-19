@@ -30,7 +30,7 @@ For example, `cert-manager` [changed a number of annotations](https://cert-manag
 TBD
 
 # Usage
-
+```
 gonogo --help
 The Kubernetes Add-On Upgrade Validation Bundle is a spec that can be used to define and then discover if an add-on upgrade is safe to perform.
 
