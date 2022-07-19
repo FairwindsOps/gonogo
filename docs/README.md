@@ -1,3 +1,8 @@
+---
+meta:
+  - name: description
+    content: "Fairwinds GoNoGo | Documentation"
+---
 <div align="center" class="no-border">
   <img src="/img/gonogo-logo.png" alt="GoNoGo Logo">
   <br>
@@ -24,7 +29,7 @@ A number factors can affect whether the upgrade of an addon (like cert-manager, 
 
 For example, `cert-manager` [changed a number of annotations](https://cert-manager.io/docs/installation/upgrading/upgrading-0.10-0.11/#additional-annotation-changes) in the upgrade from `0.10` to `0.11`.With Hall Monitor you can add an OPA check to your bundle spec looking for instances of that annotation in the affected cluster resources and be warned about it before you do the upgrade.
 
-## Documentation
+
 
 # Installation
 TBD
@@ -45,15 +50,19 @@ Available Commands:
   version     Prints the current version of the tool.
 
 Flags:
+
   -h, --help      help for gonogo
   -v, --v Level   number for the log level verbosity
 
 Use "gonogo [command] --help" for more information about a command.
+
 ```
 
 Pass in a bundle spec with the addon definitions that you want to check
 ```
+
 gonogo check /path/to/bundle/bundle.yaml
+
 ```
 
 
@@ -67,19 +76,21 @@ and network with fellow Kubernetes users.
 or
 [join the user group](https://www.fairwinds.com/open-source-software-user-group) to get involved!
 
+
 <a href="https://www.fairwinds.com/t-shirt-offer?utm_source=gonogo&utm_medium=gonogo&utm_campaign=gonogo-tshirt">
+
  <img src="https://www.fairwinds.com/hubfs/Doc_Banners/Fairwinds_OSS_User_Group_740x125_v6.png" alt="Love Fairwinds Open Source? Share your business email and job title and we'll send you a free Fairwinds t-shirt!" />
 </a>
 
 ## Other Projects from Fairwinds
 
+
 Enjoying GoNoGo? Check out some of our other projects:
+
 * [Polaris](https://github.com/FairwindsOps/Polaris) - Audit, enforce, and build policies for Kubernetes resources, including over 20 built-in checks for best practices
 * [Goldilocks](https://github.com/FairwindsOps/Goldilocks) - Right-size your Kubernetes Deployments by compare your memory and CPU settings against actual usage
 * [Nova](https://github.com/FairwindsOps/Nova) - Check to see if any of your Helm charts have updates available
 * [rbac-manager](https://github.com/FairwindsOps/rbac-manager) - Simplify the management of RBAC in your Kubernetes clusters
 
 Or [check out the full list](https://www.fairwinds.com/open-source-software?utm_source=gonogo&utm_medium=gonogo&utm_campaign=gonogo)
-
-
 
