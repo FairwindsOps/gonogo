@@ -29,6 +29,10 @@ A number factors can affect whether the upgrade of an addon (like cert-manager, 
 
 For example, `cert-manager` [changed a number of annotations](https://cert-manager.io/docs/installation/upgrading/upgrading-0.10-0.11/#additional-annotation-changes) in the upgrade from `0.10` to `0.11`.With Hall Monitor you can add an OPA check to your bundle spec looking for instances of that annotation in the affected cluster resources and be warned about it before you do the upgrade.
 
+GoNoGo 
+
+-
+
 # Usage
 ```
 gonogo --help
