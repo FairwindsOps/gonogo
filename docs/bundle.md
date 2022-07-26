@@ -54,9 +54,38 @@ Here is a breakdown of the different fields or keys
 - **warning**: a free-form string value that can be used for internal information
 - **compatible_k8s_versions**: the begin and end cluster versions supported by the addon
 - **necessary_api_versions**: apis that must be present in the cluster for the addon to succeed
-- **values_schema**: string value that can be used to define inline schema validation
+- **values_schema**: string value that can be used to define inline (schema validation)[https://helm.sh/docs/topics/charts/#schema-files]
 - **resources**: a list of cluster objects to be checked during OPA validation
 - **opa_checks**: a string value that can be used to define inline OPA policies using (https://medium.com/@mathurvarun98/how-to-write-great-rego-policies-dc6117679c9f)[Rego].
+
+Example of specifying a `values_schema` value:
+
+```
+values_schema: |
+    {
+      "$schema": "http://json-schema.org/schema#",
+      "type": "object",
+      "properties": {
+        "image": {
+          "type": "object",
+          "required": [
+            "repository",
+            "pullPolicy"
+            ],
+            "properties": {
+              "repository": {
+                "type": "string",
+                "pattern": "^[a-z0-9]+"
+              },
+              "pullPolicy": {
+                "type": "string",
+                "pattern": "Always"
+              }
+            }
+          }
+        }
+      }
+```
 
 # How GoNoGO Uses the Bundle
 GoNoGo first compares the list of addons in your bundle spec to the Helm releases in you cluster. It only runs checks against addons that have a successfully deployed release in your Kubernetes cluster.
