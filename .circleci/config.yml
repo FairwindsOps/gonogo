@@ -100,6 +100,7 @@ jobs:
           command: |
             cd ./dist
             aws s3 sync ./ s3://gonogo.docs.fairwinds.com --delete
+
 workflows:
   version: 2
   test:
@@ -117,7 +118,7 @@ workflows:
     jobs:
       - release:
           filters:
-            branch:
+            branches:
               ignore: /.*/
             tags:
               only: /.*/
