@@ -13,12 +13,16 @@ module.exports = {
                 sidebarDepth: 0,
             },
             {
+                title: "Quickstart",
+                path: "/quickstart",
+            },
+            {
                 title: "Installation",
                 path: "/installation",
             },
             {
-                title: "Quickstart",
-                path: "/quickstart",
+                title: "Bundle Spec",
+                path: "/bundle",
             },
             {
                 title: "FAQ",
