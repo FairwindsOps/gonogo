@@ -6,7 +6,6 @@ release:
     name: gonogo
 builds:
   - id: gonogo
-    main: cmd/gonogo/main.go
     binary: gonogo
     ldflags:
       - -X main.version={{.Version}} -X main.commit={{.Commit}} -s -w
