@@ -18,7 +18,7 @@ builds:
     goarch:
       - amd64
       - arm
-      - amd64
+      - arm64
     goarm:
       - 6
       - 7
@@ -28,13 +28,6 @@ before:
     - go mod tidy
     # you may remove this if you don't need go generate
     - go generate ./...
-archives:
-  - replacements:
-      darwin: Darwin
-      linux: Linux
-      windows: Windows
-      386: i386
-      amd64: x86_64
 checksum:
   name_template: 'checksums.txt'
 snapshot:
