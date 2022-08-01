@@ -1,0 +1,107 @@
+version: 2.1
+
+orbs:
+  rok8s: fairwinds/rok8s-scripts@11
+  oss-docs: fairwinds/oss-docs@0
+
+references:
+  enable_experimental_features: &enable_experimental_docker_features
+    run:
+      name: enable experimental features
+      command: |
+        set -ex
+        apk --update add openssh
+        ssh remote-docker \<<EOF
+          sudo bash -c 'echo "{\"experimental\": true}" > /etc/docker/daemon.json'
+          sudo systemctl restart docker
+        EOF
+  install_vault_alpine: &install_vault_alpine
+    run:
+      name: install hashicorp vault
+      command: |
+        apk --update add curl yq
+        cd /tmp
+        curl -LO https://releases.hashicorp.com/vault/1.9.2/vault_1.9.2_linux_amd64.zip
+        unzip vault_1.9.2_linux_amd64.zip
+        mv vault /usr/bin/vault
+
+
+
+jobs:
+  test:
+    working_directory: /home/circleci/go/src/github.com/fairwindsops/gonogo
+    docker:
+      - image: cimg/go:1.17
+    steps:
+      - checkout
+      - run: go mod download && go mod verify
+      - run: go test -v ./... -coverprofile=coverage.txt -covermode=atomic
+      - run: go vet 2> govet-report.out
+      - run: go tool cover -html=coverage.txt -o cover-report.html
+  snapshot:
+    working_directory: /go/src/github.com/fairwindsops/gonogo
+    resource_class: large
+    docker:
+      - image: goreleaser/goreleaser:v1.5.0
+    steps:
+      - checkout
+      - setup_remote_docker:
+          version: 20.10.6
+      - *enable_experimental_docker_features
+      - run: goreleaser --snapshot --skip-sign
+      - store_artifacts:
+          path: dist
+          destination: snapshot
+  release:
+    working_directory: /go/src/github.com/fairwindsops/gonogo
+    resource_class: large
+    shell: /bin/bash
+    docker:
+      - image: goreleaser/goreleaser:v1.5.0
+        environment:
+          GO111MODULE: "on"
+    steps:
+      - checkout
+      - setup_remote_docker:
+          version: 20.10.6
+      - *enable_experimental_docker_features
+      - *install_vault_alpine
+      - rok8s/get_vault_env:
+          vault_path: repo/global/env
+      - rok8s/get_vault_env:
+          vault_path: repo/gonogo/env
+      - run:
+          name: docker login
+          command: |
+            docker login -u _json_key -p "$(echo $GCP_ARTIFACTREADWRITE_JSON_KEY | base64 -d)" us-docker.pkg.dev
+      - run: echo 'export GORELEASER_CURRENT_TAG="${CIRCLE_TAG}"' >> $BASH_ENV
+      - run: goreleaser
+
+workflows:
+  version: 2
+  test:
+    jobs:
+      - test
+      - snapshot:
+          requires:
+            - test
+          filters:
+            branches:
+              only: /.*/
+            tags:
+              ignore: /.*/
+  release:
+    jobs:
+      - release:
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /.*/
+      - oss-docs/publish-docs:
+          repository: gonogo
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^.*/

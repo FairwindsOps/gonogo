@@ -17,7 +17,7 @@ package validate
 import (
 	"encoding/json"
 
-	"github.com/fairwindsops/hall-monitor/pkg/helm"
+	"github.com/fairwindsops/gonogo/pkg/helm"
 )
 
 // Config contains the necessary pieces to run the validation
