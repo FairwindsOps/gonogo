@@ -38,7 +38,7 @@ func init() {
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "hall-monitor",
+	Use:   "gonogo",
 	Short: "Validates whether or not an add-on is safe to upgrade",
 	Long:  `The Kubernetes Add-On Upgrade Validation Bundle is a spec that can be used to define and then discover if an add-on upgrade is safe to perform.`,
 	Run: func(cmd *cobra.Command, args []string) {

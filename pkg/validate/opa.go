@@ -20,7 +20,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/fairwindsops/hall-monitor/pkg/helm"
+	"github.com/fairwindsops/gonogo/pkg/helm"
 	"github.com/fairwindsops/insights-plugins/plugins/opa/pkg/rego"
 	"gopkg.in/yaml.v3"
 

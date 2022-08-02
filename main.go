@@ -15,7 +15,7 @@ limitations under the License.
 */
 package main
 
-import "github.com/fairwindsops/hall-monitor/cmd"
+import "github.com/fairwindsops/gonogo/cmd"
 
 var (
 	// version is set during build
