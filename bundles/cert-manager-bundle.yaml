@@ -3,24 +3,21 @@ addons:
   versions:
     start: 0.5.2
     end: 1.7.0
-  notes: A text field with general notes
+  notes: https://cert-manager.io/docs/release-notes/release-notes-0.11
   source:
     chart: cert-manager
     repository: https://charts.jetstack.io
-  warnings:
-  - "warning 1"
-  - "warning 2"
+  warnings: ""
   compatible_k8s_versions:
-    max: 1.21
+    max: 1.25
     min: 1.18
   necessary_api_versions:
   - apps/v1
   - core/v1
   values_schema: ""
   resources:
-  - "apps/v1/deployments"
   - "v1/pods"
-  - "v1/secrets"
+  - "apis/networking.k8s.io/v1"
   opa_checks:
   - >
     package Fairwinds
