@@ -13,11 +13,11 @@ addons:
     min: 1.18
   necessary_api_versions:
   - apps/v1
-  - core/v1
+  - v1
   values_schema: ""
   resources:
-  - "v1/pods"
-  - "apis/networking.k8s.io/v1"
+  - "v1/secrets"
+  - "networking.k8s.io/v1/ingresses"
   opa_checks:
   - >
     package Fairwinds
