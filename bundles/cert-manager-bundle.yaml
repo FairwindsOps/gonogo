@@ -1,7 +1,7 @@
 addons:
 - name: cert-manager
   versions:
-    start: 0.5.2
+    start: 0.10.1
     end: 1.7.0
   notes: https://cert-manager.io/docs/release-notes/release-notes-0.11
   source:
