@@ -12,8 +12,6 @@ addons:
     max: 1.25
     min: 1.18
   necessary_api_versions:
-  - apps/v1
-  - v1
   values_schema: ""
   resources:
   - "v1/secrets"
