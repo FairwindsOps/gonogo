@@ -1,0 +1,53 @@
+addons:
+- name: cert-manager
+  versions:
+    start: 0.5.2
+    end: 1.7.0
+  notes: A text field with general notes
+  source:
+    chart: cert-manager
+    repository: https://charts.jetstack.io
+  warnings:
+  - "warning 1"
+  - "warning 2"
+  compatible_k8s_versions:
+    max: 1.21
+    min: 1.18
+  necessary_api_versions:
+  - apps/v1
+  - core/v1
+  values_schema: ""
+  resources:
+  - "apps/v1/deployments"
+  - "v1/pods"
+  - "v1/secrets"
+  opa_checks:
+  - >
+    package Fairwinds
+    secretUsingDeprecatedAnnotations[actionItem] {
+            input.kind == "Secret"
+            input.metadata.annotations[k] = _
+            startswith(k, "certmanager.k8s.io/")
+            actionItem := {
+              "title": "Deprecated annotation present",
+              "description": "Old versions of the cert-manager annotation have been found on secrets",
+              "severity": 0.1,
+              "remediation": "Please update your secret annotations to use the current versions. See https://cert-manager.io/docs/release-notes/release-notes-0.11/ for details",
+              "category": "Reliability"
+            }
+          }
+
+  - >
+      package Fairwinds
+      secretUsingDeprecatedAnnotations[actionItem] {
+              input.kind == "Ingress"
+              input.metadata.annotations[k] = _
+              startswith(k, "certmanager.k8s.io/")
+              actionItem := {
+                "title": "Deprecated annotation present",
+                "description": "Old versions of the cert-manager annotation have been found on secrets",
+                "severity": 0.1,
+                "remediation": "Please update your secret annotations to use the current versions. See https://cert-manager.io/docs/release-notes/release-notes-0.11/ for details",
+                "category": "Reliability"
+              }
+            }
