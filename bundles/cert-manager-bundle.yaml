@@ -7,7 +7,7 @@ addons:
   source:
     chart: cert-manager
     repository: https://charts.jetstack.io
-  warnings: ""
+  warnings:
   compatible_k8s_versions:
     max: 1.25
     min: 1.18
