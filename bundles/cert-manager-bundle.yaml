@@ -2,16 +2,15 @@ addons:
 - name: cert-manager
   versions:
     start: 0.10.1
-    end: 1.7.0
+    end: 1.2.0
   notes: https://cert-manager.io/docs/release-notes/release-notes-0.11
   source:
     chart: cert-manager
     repository: https://charts.jetstack.io
   warnings:
   compatible_k8s_versions:
-    max: 1.25
-    min: 1.18
-  necessary_api_versions:
+    max: 1.21
+    min: 1.16
   values_schema: ""
   resources:
   - "v1/secrets"
