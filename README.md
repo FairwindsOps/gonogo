@@ -19,6 +19,10 @@
 
 GoNoGo is a utility to help users determine upgrade confidence around Kubernetes cluster addons.
 
+## Alpha Software
+
+At this time, GoNoGo is currently in alpha. This means that we could change literally anything at any time without notice. Keep an eye out for major changes, and hopefully a v1 release at some point.
+
 ## Documentation
 
 Check out the [documentation at docs.fairwinds.com](https://gonogo.docs.fairwinds.com)
