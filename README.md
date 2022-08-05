@@ -29,7 +29,7 @@ Check out the [documentation at docs.fairwinds.com](https://gonogo.docs.fairwind
 ## Purpose
 A number factors can affect whether the upgrade of an addon (like cert-manager, nginx ingress, etc) will be successful or not. For example, some addon upgrades require a specific api to be available in the cluster, or a specific version of the Kubernetes cluster in general. Or perhaps an addon has deprecated a particular annotation and you want to make sure your upgraded addon doesn't include those deprecated annotations. Rather than having to manually assess each addon, GoNoGo enables you to create a specification (called a bundle spec) that you can populate with checks for the upgraded version, and run those against your cluster to get an upgrade confidence score.
 
-For example, `cert-manager` [changed a number of annotations](https://cert-manager.io/docs/installation/upgrading/upgrading-0.10-0.11/#additional-annotation-changes) in the upgrade from `0.10` to `0.11`.With Hall Monitor you can add an OPA check to your bundle spec looking for instances of that annotation in the affected cluster resources and be warned about it before you do the upgrade.
+For example, `cert-manager` [changed a number of annotations](https://cert-manager.io/docs/installation/upgrading/upgrading-0.10-0.11/#additional-annotation-changes) in the upgrade from `0.10` to `0.11`. With GoNoGo you can add an OPA check to your bundle spec looking for instances of that annotation in the affected cluster resources and be warned about it before you do the upgrade.
 
 # Usage
 ```
