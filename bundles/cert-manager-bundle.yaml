@@ -39,7 +39,7 @@ addons:
               startswith(k, "certmanager.k8s.io/")
               actionItem := {
                 "title": "Deprecated annotation present",
-                "description": "Old versions of the cert-manager annotation have been found on secrets",
+                "description": "Old versions of the cert-manager annotation have been found on ingress",
                 "severity": 0.1,
                 "remediation": "Please update your secret annotations to use the current versions. See https://cert-manager.io/docs/release-notes/release-notes-0.11/ for details",
                 "category": "Reliability"
