@@ -1,5 +1,5 @@
 <div align="center" class="no-border">
-  <img src="/img/gonogo-logo.png" alt="GoNoGo Logo">
+  <img src="https://gonogo.docs.fairwinds.com/img/gonogo-logo.png" alt="GoNoGo Logo">
   <br>
   <h3>Determine the upgrade confidence of your cluster addons.</h3>
   <a href="https://github.com/FairwindsOps/gonogo/releases">
