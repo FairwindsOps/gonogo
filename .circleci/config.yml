@@ -31,7 +31,7 @@ jobs:
   test:
     working_directory: /home/circleci/go/src/github.com/fairwindsops/gonogo
     docker:
-      - image: cimg/go:1.17
+      - image: cimg/go:1.19
     steps:
       - checkout
       - run: go mod download && go mod verify
