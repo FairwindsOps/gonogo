@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/blang/semver/v4 v4.0.0
 	github.com/fairwindsops/insights-plugins/plugins/opa v0.0.0-20220913143126-b106a4ec42f6
-	github.com/spf13/cobra v1.5.0
+	github.com/spf13/cobra v1.6.1
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.8.0
 	github.com/thoas/go-funk v0.9.2
