@@ -73,21 +73,17 @@ and network with fellow Kubernetes users.
 or
 [join the user group](https://www.fairwinds.com/open-source-software-user-group) to get involved!
 
-
 <a href="https://www.fairwinds.com/t-shirt-offer?utm_source=gonogo&utm_medium=gonogo&utm_campaign=gonogo-tshirt">
-
- <img src="https://www.fairwinds.com/hubfs/Doc_Banners/Fairwinds_OSS_User_Group_740x125_v6.png" alt="Love Fairwinds Open Source? Share your business email and job title and we'll send you a free Fairwinds t-shirt!" />
+  <img src="https://www.fairwinds.com/hubfs/Doc_Banners/Fairwinds_OSS_User_Group_740x125_v6.png" alt="Love Fairwinds Open Source? Share your business email and job title and we'll send you a free Fairwinds t-shirt!" />
 </a>
 
 ## Other Projects from Fairwinds
 
-
-Enjoying GoNoGo? Check out some of our other projects:
-
+Enjoying Gonogo? Check out some of our other projects:
 * [Polaris](https://github.com/FairwindsOps/Polaris) - Audit, enforce, and build policies for Kubernetes resources, including over 20 built-in checks for best practices
 * [Goldilocks](https://github.com/FairwindsOps/Goldilocks) - Right-size your Kubernetes Deployments by compare your memory and CPU settings against actual usage
+* [Pluto](https://github.com/FairwindsOps/Pluto) - Detect Kubernetes resources that have been deprecated or removed in future versions
 * [Nova](https://github.com/FairwindsOps/Nova) - Check to see if any of your Helm charts have updates available
 * [rbac-manager](https://github.com/FairwindsOps/rbac-manager) - Simplify the management of RBAC in your Kubernetes clusters
 
 Or [check out the full list](https://www.fairwinds.com/open-source-software?utm_source=gonogo&utm_medium=gonogo&utm_campaign=gonogo)
-
