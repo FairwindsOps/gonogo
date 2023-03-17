@@ -1,7 +1,7 @@
 ---
 meta:
   - name: description
-    content: "Fairwinds GoNoGo | Installation documentation"
+    content: Installation instructions, requirements, and troubleshooting for GoNoGo.
 ---
 
 # Installation
