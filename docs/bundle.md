@@ -1,7 +1,7 @@
 ---
 meta:
   - name: description
-    content: GoNoGo relies on a file called a bundle spec. The bundle spec is a yaml document that defines the addons to check against, and the various conditions to check for.
+    content: "GoNoGo relies on a file called a bundle spec. The bundle spec is a yaml document that defines the addons to check against, and the various conditions to check for."
 ---
 # Bundle Creation
 
