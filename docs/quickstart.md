@@ -1,7 +1,7 @@
 ---
 meta:
   - name: description
-    content: Quickstart instructions to install GoNoGo. GoNoGo depends on a bundle spec to run its validation. See documenation on creating the bundle spec for more details 
+    content: "Quickstart instructions to install GoNoGo. GoNoGo depends on a bundle spec to run its validation. See documenation on creating the bundle spec for more details "
 ---
 # QuickStart
 
