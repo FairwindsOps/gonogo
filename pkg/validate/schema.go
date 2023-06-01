@@ -63,6 +63,11 @@ func (m *match) validateValues() error {
 				ResourceName:      m.Release.Name,
 				Title:             "Failed Schema Validation",
 				Description:       "schema validation failed for this helm release",
+				Remediation: "Review schema changes in the helm chart",
+				EventType: "schemaValidationFailed",
+				Severity: "warning",
+				Category: "Reliability",
+
 			})
 			return nil
 		}
