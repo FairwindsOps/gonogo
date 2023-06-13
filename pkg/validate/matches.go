@@ -75,6 +75,7 @@ func (c *Config) getMatches() (matches, error) {
 
 				if v.GTE(vStart) && v.LT(vEnd) {
 					klog.V(3).Infof("Found match for chart %s in release %s", bundle.Name, release.Name)
+
 					finalMatches[fmt.Sprintf("%s/%s", release.Namespace, release.Name)] = match{
 						Bundle:  bundle,
 						Release: release,
@@ -84,6 +85,8 @@ func (c *Config) getMatches() (matches, error) {
 								Current: release.Chart.Metadata.Version,
 								Upgrade: bundle.Versions.End,
 							},
+							Notes:    bundle.Notes,
+							Warnings: bundle.Warnings,
 						},
 						Helm: c.Helm,
 					}
