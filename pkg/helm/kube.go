@@ -26,6 +26,7 @@ import (
 
 	// This is required to auth to cloud providers (i.e. GKE)
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
+	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 
@@ -108,7 +109,13 @@ func getRESTMapper() meta.RESTMapper {
 	if err != nil {
 		klog.Fatalf("Error getting kubeconfig: %v", err)
 	}
-	restmapper, err := apiutil.NewDynamicRESTMapper(kubeConf)
+
+	httpClient, err := rest.HTTPClientFor(kubeConf)
+	if err != nil {
+		klog.Fatal("error creating httpClient using kubeconfig: %s", err.Error())
+	}
+
+	restmapper, err := apiutil.NewDynamicRESTMapper(kubeConf, httpClient)
 	if err != nil {
 		klog.Fatalf("Error creating REST Mapper: %v", err)
 	}
