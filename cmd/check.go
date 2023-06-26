@@ -39,7 +39,10 @@ var checkCmd = &cobra.Command{
 	Long:    `Check for Helm releases that can be updated`,
 	PreRunE: validateArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		bundleFile = args[0]
+		if len(args) != 0 {
+			bundleFile = args[0]
+		}
+
 		config := &validate.Config{
 			Helm:   helm.NewHelm(),
 			Bundle: bundleFile,
@@ -54,7 +57,7 @@ var checkCmd = &cobra.Command{
 }
 
 func validateArgs(cmd *cobra.Command, args []string) error {
-	if args != nil {
+	if len(args) != 0 {
 		_, err := os.Stat(args[0])
 
 		if os.IsNotExist(err) {
