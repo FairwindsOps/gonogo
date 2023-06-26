@@ -18,10 +18,17 @@ package bundle
 
 import (
 	"fmt"
+	"io"
+	"io/fs"
 	"io/ioutil"
+
+	"embed"
 
 	"gopkg.in/yaml.v2"
 )
+
+//go:embed bundles/*
+var defaultBundle embed.FS
 
 // Source is the chart and repo for Helm releases
 type Source struct {
@@ -47,23 +54,37 @@ type K8sVersions struct {
 
 // Bundle maps the fields from a supplied bundle spec file
 type Bundle struct {
-	Name                  string   `yaml:"name"`                    // name of the helm release
-	Versions              Versions `yaml:"versions"`                // start and stop versions of helm chart to evaluate
-	Notes                 string   `yaml:"notes"`                   // strings of general notes
-	Source                Source   `yaml:"source"`                  // chart name and repository for helm release
-	Warnings              []string `yaml:"warnings"`                // strings of warning messages
+	Name                  string      `yaml:"name"`                    // name of the helm release
+	Versions              Versions    `yaml:"versions"`                // start and stop versions of helm chart to evaluate
+	Notes                 string      `yaml:"notes"`                   // strings of general notes
+	Source                Source      `yaml:"source"`                  // chart name and repository for helm release
+	Warnings              []string    `yaml:"warnings"`                // strings of warning messages
 	CompatibleK8sVersions K8sVersions `yaml:"compatible_k8s_versions"` // kubernetes cluster version to check for
-	NecessaryAPIVersions  []string `yaml:"necessary_api_versions"`  // specific api versions to check for
-	ValuesSchema          string   `yaml:"values_schema"`           // embedded values.schema.json
-	OpaChecks             []string `yaml:"opa_checks"`              // embedded rego code
-	Resources             []string `yaml:"resources"`               // api objects
+	NecessaryAPIVersions  []string    `yaml:"necessary_api_versions"`  // specific api versions to check for
+	ValuesSchema          string      `yaml:"values_schema"`           // embedded values.schema.json
+	OpaChecks             []string    `yaml:"opa_checks"`              // embedded rego code
+	Resources             []string    `yaml:"resources"`               // api objects
 }
 
 // ReadConfig takes a bundle spec file as a string and maps it into the Bundle struct
 func ReadConfig(file string) (*BundleConfig, error) {
-	body, err := ioutil.ReadFile(file)
-	if err != nil {
-		return nil, fmt.Errorf("unable to read file: %v", err)
+	var body []byte
+
+	if file == "" {
+		defaultFile, err := getDefaultBundle()
+		if err != nil {
+			return nil, fmt.Errorf("failed retrieving default bundle file: %v", err)
+		}
+		body, err = io.ReadAll(defaultFile)
+		if err != nil {
+			return nil, fmt.Errorf("unable to read default bundle file: %v", err)
+		}
+	} else {
+		var err error
+		body, err = ioutil.ReadFile(file)
+		if err != nil {
+			return nil, fmt.Errorf("unable to read user provided file: %v", err)
+		}
 	}
 
 	if len(body) < 1 {
@@ -71,9 +92,30 @@ func ReadConfig(file string) (*BundleConfig, error) {
 	}
 
 	bundleconfig := &BundleConfig{}
-	err = yaml.Unmarshal(body, bundleconfig)
+	err := yaml.Unmarshal(body, bundleconfig)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse yaml file: %v", err)
 	}
 	return bundleconfig, nil
+}
+
+func getDefaultBundle() (fs.File, error) {
+	var filename string
+	filenames, err := fs.ReadDir(defaultBundle, "bundles")
+	if err != nil {
+		return nil, err
+	}
+
+	for _, f := range filenames {
+		if !f.IsDir() {
+			filename = "bundles/" + f.Name()
+
+		}
+	}
+
+	file, err := defaultBundle.Open(filename)
+	if err != nil {
+		return nil, err
+	}
+	return file, nil
 }
