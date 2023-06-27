@@ -116,6 +116,25 @@ func (m *match) addActionItem(o string, y map[string]interface{}) {
 		if i.ResourceNamespace == "" {
 			i.ResourceNamespace = y["metadata"].(map[string]interface{})["namespace"].(string)
 		}
+		if i.Category == "" {
+			i.Category = y["metadata"].(map[string]interface{})["category"].(string)
+		}
+		if i.Remediation == "" {
+			i.Remediation = y["metadata"].(map[string]interface{})["remediation"].(string)
+		}
+		if i.Severity == "" {
+			i.Severity = y["metadata"].(map[string]interface{})["severity"].(string)
+		}
+		if i.Title == "" {
+			i.Title = y["metadata"].(map[string]interface{})["title"].(string)
+		}
+		if i.Description == "" {
+			i.Description = y["metadata"].(map[string]interface{})["description"].(string)
+		}
+		if i.EventType == "" {
+			i.EventType = y["metadata"].(map[string]interface{})["eventtype"].(string)
+		}
+
 		m.AddonOutput.ActionItems = append(m.AddonOutput.ActionItems, i)
 	}
 }
