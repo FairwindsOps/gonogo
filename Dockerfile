@@ -11,8 +11,7 @@ LABEL org.opencontainers.image.authors="FairwindsOps, Inc." \
 
 WORKDIR /usr/local/bin
 
-RUN apk -U upgrade
-RUN apk --no-cache add ca-certificates
+RUN apk update && apk upgrade --no-cache
 
 RUN addgroup -S gonogo && adduser -u 1200 -S gonogo -G gonogo
 USER 1200
