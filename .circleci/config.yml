@@ -1,6 +1,7 @@
 version: 2.1
 
 orbs:
+  orb-tools: circleci/orb-tools@10.1.0
   rok8s: fairwinds/rok8s-scripts@11
   oss-docs: fairwinds/oss-docs@0
 
@@ -36,7 +37,6 @@ jobs:
     steps:
       - checkout
       - setup_remote_docker:
-          version: 20.10.6
       - run: goreleaser --snapshot --skip-sign
       - store_artifacts:
           path: dist

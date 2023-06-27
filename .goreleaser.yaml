@@ -50,6 +50,7 @@ docker_signs:
 
 brews:
   - name: gonogo
+    goarm: 6
     tap:
       owner: FairwindsOps
       name: homebrew-tap
@@ -61,7 +62,6 @@ brews:
 
 dockers:
 - image_templates:
-  - "us-docker.pkg.dev/fairwinds-ops/oss/gonogo:{{ .FullCommit }}-amd64"
   - "us-docker.pkg.dev/fairwinds-ops/oss/gonogo:{{ .Tag }}-amd64"
   - "us-docker.pkg.dev/fairwinds-ops/oss/gonogo:v{{ .Major }}-amd64"
   - "us-docker.pkg.dev/fairwinds-ops/oss/gonogo:v{{ .Major }}.{{ .Minor }}-amd64"

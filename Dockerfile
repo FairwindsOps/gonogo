@@ -11,8 +11,6 @@ LABEL org.opencontainers.image.authors="FairwindsOps, Inc." \
 
 WORKDIR /usr/local/bin
 
-RUN apk update && apk upgrade --no-cache
-
 RUN addgroup -S gonogo && adduser -u 1200 -S gonogo -G gonogo
 USER 1200
 COPY gonogo .
