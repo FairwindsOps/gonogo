@@ -1,4 +1,4 @@
-FROM ubuntu:latest
+FROM alpine:3.18
 
 LABEL org.opencontainers.image.authors="FairwindsOps, Inc." \
     org.opencontainers.image.vendor="FairwindsOps, Inc." \
@@ -11,9 +11,11 @@ LABEL org.opencontainers.image.authors="FairwindsOps, Inc." \
 
 WORKDIR /usr/local/bin
 
-RUN groupadd -r gonogo && useradd -r -g gonogo gonogo
+RUN apk -U upgrade
+RUN apk --no-cache add ca-certificates
 
-USER gonogo
+RUN addgroup -S gonogo && adduser -u 1200 -S gonogo -G gonogo
+USER 1200
 COPY gonogo .
 
 WORKDIR /opt/app
