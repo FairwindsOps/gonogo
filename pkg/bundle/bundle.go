@@ -105,7 +105,7 @@ func getDefaultBundle() (fs.File, error) {
 	if err != nil {
 		return nil, err
 	}
-
+// TODO: This just grabs the last bundle file in the dir, need to compile them all together to support multiple
 	for _, f := range filenames {
 		if !f.IsDir() {
 			filename = "bundles/" + f.Name()
