@@ -61,7 +61,7 @@ func validateArgs(cmd *cobra.Command, args []string) error {
 		_, err := os.Stat(args[0])
 
 		if os.IsNotExist(err) {
-			return fmt.Errorf("spec file %s does not exist", args[0])
+			return fmt.Errorf("bundle file %s does not exist", args[0])
 		}
 	}
 	return nil
