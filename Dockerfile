@@ -9,12 +9,7 @@ LABEL org.opencontainers.image.authors="FairwindsOps, Inc." \
     org.opencontainers.image.url="https://github.com/FairwindsOps/gonogo" \
     org.opencontainers.image.licenses="Apache License 2.0"
 
-WORKDIR /usr/local/bin
+USER nobody
+COPY gonogo /
 
-RUN addgroup -S gonogo && adduser -u 1200 -S gonogo -G gonogo
-USER 1200
-COPY gonogo .
-
-WORKDIR /opt/app
-
-ENTRYPOINT ["gonogo"]
+ENTRYPOINT ["/gonogo"]
