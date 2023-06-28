@@ -65,7 +65,6 @@ dockers:
   - "us-docker.pkg.dev/fairwinds-ops/oss/gonogo:{{ .Tag }}-amd64"
   - "us-docker.pkg.dev/fairwinds-ops/oss/gonogo:v{{ .Major }}-amd64"
   - "us-docker.pkg.dev/fairwinds-ops/oss/gonogo:v{{ .Major }}.{{ .Minor }}-amd64"
-  use: buildx
   dockerfile: Dockerfile
   build_flag_templates:
   - "--platform=linux/amd64"
@@ -73,7 +72,6 @@ dockers:
   - "us-docker.pkg.dev/fairwinds-ops/oss/gonogo:{{ .Tag }}-arm64v8"
   - "us-docker.pkg.dev/fairwinds-ops/oss/gonogo:v{{ .Major }}-arm64v8"
   - "us-docker.pkg.dev/fairwinds-ops/oss/gonogo:v{{ .Major }}.{{ .Minor }}-arm64v8"
-  use: buildx
   goarch: arm64
   dockerfile: Dockerfile
   build_flag_templates:
@@ -82,7 +80,6 @@ dockers:
   - "us-docker.pkg.dev/fairwinds-ops/oss/gonogo:{{ .Tag }}-armv7"
   - "us-docker.pkg.dev/fairwinds-ops/oss/gonogo:v{{ .Major }}-armv7"
   - "us-docker.pkg.dev/fairwinds-ops/oss/gonogo:v{{ .Major }}.{{ .Minor }}-armv7"
-  use: buildx
   goarch: arm64
   dockerfile: Dockerfile
   build_flag_templates:
