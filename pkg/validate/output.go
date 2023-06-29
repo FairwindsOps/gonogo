@@ -34,9 +34,10 @@ type ActionItem struct {
 	Title             string `yaml:"title"`
 	Description       string `yaml:"description"`
 	Remediation       string `yaml:"remediation"`
-	EventType         string
+	EventType         string `yaml:"eventType"`
 	Severity          string `yaml:"severity"`
 	Category          string `yaml:"category"`
+	Report            string `yaml:"report"`
 }
 type OutputVersion struct {
 	Current string `yaml:"current"`

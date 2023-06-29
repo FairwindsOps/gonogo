@@ -32,11 +32,10 @@ jobs:
     working_directory: /go/src/github.com/fairwindsops/gonogo
     resource_class: large
     docker:
-      - image: goreleaser/goreleaser:v1.17.2
+      - image: goreleaser/goreleaser:v1.18.2
     steps:
       - checkout
-      - setup_remote_docker:
-          version: 20.10.6
+      - setup_remote_docker
       - run: goreleaser --snapshot --skip-sign
       - store_artifacts:
           path: dist
@@ -46,13 +45,12 @@ jobs:
     resource_class: large
     shell: /bin/bash
     docker:
-      - image: goreleaser/goreleaser:v1.17.2
+      - image: goreleaser/goreleaser:v1.18.2
         environment:
           GO111MODULE: "on"
     steps:
       - checkout
-      - setup_remote_docker:
-          version: 20.10.6
+      - setup_remote_docker
       - *install_vault_alpine
       - rok8s/get_vault_env:
           vault_path: repo/global/env

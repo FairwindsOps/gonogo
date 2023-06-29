@@ -35,8 +35,14 @@ func (m *match) validateValues() error {
 				m.AddonOutput.ActionItems = append(m.AddonOutput.ActionItems, &ActionItem{
 					ResourceNamespace: m.Release.Namespace,
 					ResourceName:      m.Release.Name,
+					ResourceKind:      "",
 					Title:             "Failed Schema Validation",
 					Description:       "schema validation failed for this helm release",
+					Remediation:       "Review schema changes in the Helm chart",
+					EventType:         "schemaValidationFailed",
+					Severity:          "warning",
+					Category:          "Reliability",
+					Report:            "gonogo",
 				})
 				return nil
 			}
@@ -61,13 +67,14 @@ func (m *match) validateValues() error {
 			m.AddonOutput.ActionItems = append(m.AddonOutput.ActionItems, &ActionItem{
 				ResourceNamespace: m.Release.Namespace,
 				ResourceName:      m.Release.Name,
+				ResourceKind:      "",
 				Title:             "Failed Schema Validation",
 				Description:       "schema validation failed for this helm release",
-				Remediation: "Review schema changes in the helm chart",
-				EventType: "schemaValidationFailed",
-				Severity: "warning",
-				Category: "Reliability",
-
+				Remediation:       "Review schema changes in the helm chart",
+				EventType:         "schemaValidationFailed",
+				Severity:          "warning",
+				Category:          "Reliability",
+				Report:            "gonogo",
 			})
 			return nil
 		}
