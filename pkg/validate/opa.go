@@ -100,23 +100,32 @@ func (m *match) addActionItem(o string, y map[string]interface{}) {
 			continue
 		}
 
-		var i *ActionItem
+		var actionItem *ActionItem
 
-		err = yaml.Unmarshal(b, &i)
+		err = yaml.Unmarshal(b, &actionItem)
 		if err != nil {
 			klog.Error(err)
 			continue
 		}
-		if i.ResourceKind == "" {
-			i.ResourceKind = y["kind"].(string)
+		if actionItem.ResourceKind == "" {
+			kind, ok := y["metadata"].(map[string]interface{})["name"].(string)
+			if ok {
+				actionItem.ResourceKind = kind
+			}
 		}
-		if i.ResourceName == "" {
-			i.ResourceName = y["metadata"].(map[string]interface{})["name"].(string)
+		if actionItem.ResourceName == "" {
+			name, ok := y["metadata"].(map[string]interface{})["name"].(string)
+			if ok {
+				actionItem.ResourceName = name
+			}
 		}
-		if i.ResourceNamespace == "" {
-			i.ResourceNamespace = y["metadata"].(map[string]interface{})["namespace"].(string)
+		if actionItem.ResourceNamespace == "" {
+			namespace, ok := y["metadata"].(map[string]interface{})["namespace"].(string)
+			if ok {
+				actionItem.ResourceNamespace = namespace
+			}
 		}
-		m.AddonOutput.ActionItems = append(m.AddonOutput.ActionItems, i)
+		m.AddonOutput.ActionItems = append(m.AddonOutput.ActionItems, actionItem)
 	}
 }
 
