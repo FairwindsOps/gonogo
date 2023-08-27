@@ -26,11 +26,11 @@ import (
 	"github.com/fairwindsops/gonogo/pkg/validate"
 )
 
-var bundleFile string
+var bundleFile []string
 
 func init() {
 	rootCmd.AddCommand(checkCmd)
-	checkCmd.PersistentFlags().StringVarP(&bundleFile, "bundle", "b", "", "path to a bundle file")
+	checkCmd.PersistentFlags().StringSliceVarP(&bundleFile, "bundle", "b", []string{}, "bundle file(s) to use")
 }
 
 var checkCmd = &cobra.Command{
@@ -40,8 +40,10 @@ var checkCmd = &cobra.Command{
 	PreRunE: validateArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) != 0 {
-			bundleFile = args[0]
+			for _, fileName := range bundleFile {
+			bundleFile = append(bundleFile, fileName)
 		}
+	}
 
 		config := &validate.Config{
 			Helm:   helm.NewHelm(),

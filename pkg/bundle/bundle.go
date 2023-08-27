@@ -18,16 +18,16 @@ package bundle
 
 import (
 	"fmt"
-	"io"
-	"io/fs"
-	"io/ioutil"
+	"os"
 
 	"embed"
+
+	"path/filepath"
 
 	"gopkg.in/yaml.v2"
 )
 
-//go:embed bundles/*
+//go:embed bundles
 var defaultBundle embed.FS
 
 // Source is the chart and repo for Helm releases
@@ -67,55 +67,92 @@ type Bundle struct {
 }
 
 // ReadConfig takes a bundle spec file as a string and maps it into the Bundle struct
-func ReadConfig(file string) (*BundleConfig, error) {
-	var body []byte
-
-	if file == "" {
-		defaultFile, err := getDefaultBundle()
-		if err != nil {
-			return nil, fmt.Errorf("failed retrieving default bundle file: %v", err)
-		}
-		body, err = io.ReadAll(defaultFile)
-		if err != nil {
-			return nil, fmt.Errorf("unable to read default bundle file: %v", err)
-		}
-	} else {
-		var err error
-		body, err = ioutil.ReadFile(file)
-		if err != nil {
-			return nil, fmt.Errorf("unable to read user provided file: %v", err)
-		}
-	}
-
-	if len(body) < 1 {
-		return nil, fmt.Errorf("file is empty")
-	}
-
+func ReadConfig(file []string) (*BundleConfig, error) {
 	bundleconfig := &BundleConfig{}
-	err := yaml.Unmarshal(body, bundleconfig)
-	if err != nil {
-		return nil, fmt.Errorf("unable to parse yaml file: %v", err)
+	body := make([][]byte, len(file))
+
+	if len(file) == 0 {
+		defaultFiles, err := getDefaultBundles()
+		if err != nil {
+			return nil, fmt.Errorf("failed retrieving default bundle files: %v", err)
+		}
+			body = append(body, defaultFiles...)
 	}
+
+	if len(file) > 0 {
+		for _, str := range file {
+			contents, err := os.ReadFile(str)
+			if err != nil {
+				return nil, err
+			}
+
+			body = append(body, contents)
+		}
+	}
+
+	for _, c := range body {
+		err := yaml.Unmarshal(c, bundleconfig)
+		if err != nil {
+			return nil, fmt.Errorf("unable to parse yaml file: %v", err)
+		}
+	}
+
 	return bundleconfig, nil
 }
 
-func getDefaultBundle() (fs.File, error) {
-	var filename string
-	filenames, err := fs.ReadDir(defaultBundle, "bundles")
+func getDefaultBundles() ([][]byte, error) {
+	content := make([][]byte, 0)
+	files, err := defaultBundle.ReadDir("bundles")
 	if err != nil {
-		return nil, err
+		fmt.Errorf("unable to process bundles: %v", err)
 	}
-// TODO: This just grabs the last bundle file in the dir, need to compile them all together to support multiple
-	for _, f := range filenames {
-		if !f.IsDir() {
-			filename = "bundles/" + f.Name()
 
+	// allAddons := []*Bundle{}
+
+	for _, file := range files {
+		f, err := defaultBundle.ReadFile(filepath.Join("bundles", file.Name()))
+
+		if err != nil {
+			fmt.Printf("unable to read file: %v", err)
+			continue
 		}
-	}
+		content = append(content, f)
+		// var bundleconfig BundleConfig
+		// if err := yaml.Unmarshal(content, &bundleconfig); err != nil {
+		// 	fmt.Printf("unable to unmarshal")
+		// 	continue
+		// }
 
-	file, err := defaultBundle.Open(filename)
-	if err != nil {
-		return nil, err
+		// 	for _, addons := range bundleconfig.Addons {
+		// 		allAddons = append(allAddons, addons)
+		// 	}
+
+		// }
+
+		// combinedAddons := BundleConfig{Addons: allAddons}
+		// fmt.Println(combinedAddons)
+
+		// var filename []string
+		// filenames, err := fs.ReadDir(defaultBundle, "bundles")
+		// if err != nil {
+		// 	return nil, err
+		// }
+		// // TODO: This just grabs the last bundle file in the dir, need to compile them all together to support multiple
+		// for _, f := range filenames {
+		// 	if !f.IsDir() {
+		// 		filename = "bundles/" + f.Name()
+
+		// 	}
+		// }
+
+		// file, err := defaultBundle.Open(filename)
+		// if err != nil {
+		// 	return nil, err
+		// }
+
+		// fmt.Println(combinedAddons)
+
 	}
-	return file, nil
+	return content, nil
+
 }
