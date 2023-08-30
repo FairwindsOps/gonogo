@@ -68,91 +68,84 @@ type Bundle struct {
 
 // ReadConfig takes a bundle spec file as a string and maps it into the Bundle struct
 func ReadConfig(file []string) (*BundleConfig, error) {
+	var tempBundleConfig struct {
+		Addons []*Bundle `yaml:"addons"`
+	}
 	bundleconfig := &BundleConfig{}
-	body := make([][]byte, len(file))
 
 	if len(file) == 0 {
-		defaultFiles, err := getDefaultBundles()
+		files, err := defaultBundle.ReadDir("bundles")
 		if err != nil {
-			return nil, fmt.Errorf("failed retrieving default bundle files: %v", err)
+			fmt.Errorf("unable to process bundles: %v", err)
 		}
-			body = append(body, defaultFiles...)
+
+		for _, file := range files {
+			f, err := defaultBundle.ReadFile(filepath.Join("bundles", file.Name()))
+			if err != nil {
+				fmt.Printf("unable to read file: %v", err)
+				continue
+			}
+
+			if err := yaml.Unmarshal(f, &tempBundleConfig); err != nil {
+				fmt.Printf("Error unmarshaling file %s: %v\n", f, err)
+				continue
+			}
+
+			bundleconfig.Addons = append(bundleconfig.Addons, tempBundleConfig.Addons...)
+			value := *bundleconfig
+			fmt.Println(value)
+
+		}
+		// if err != nil {
+		// 	return nil, fmt.Errorf("failed retrieving default bundle files: %v", err)
+		// }
+		// body = append(body, defaultFiles...)
+		// err = yaml.Unmarshal(body, &bundleconfig)
 	}
 
 	if len(file) > 0 {
 		for _, str := range file {
-			contents, err := os.ReadFile(str)
+			f, err := os.ReadFile(str)
 			if err != nil {
-				return nil, err
+				fmt.Printf("unable to read file: %v", err)
+				continue
+			}
+			if err := yaml.Unmarshal(f, &tempBundleConfig); err != nil {
+				fmt.Printf("Error unmarshaling file %s: %v\n", f, err)
+				continue
 			}
 
-			body = append(body, contents)
-		}
-	}
-
-	for _, c := range body {
-		err := yaml.Unmarshal(c, bundleconfig)
-		if err != nil {
-			return nil, fmt.Errorf("unable to parse yaml file: %v", err)
+			bundleconfig.Addons = append(bundleconfig.Addons, tempBundleConfig.Addons...)
 		}
 	}
 
 	return bundleconfig, nil
 }
 
-func getDefaultBundles() ([][]byte, error) {
-	content := make([][]byte, 0)
-	files, err := defaultBundle.ReadDir("bundles")
-	if err != nil {
-		fmt.Errorf("unable to process bundles: %v", err)
-	}
+// func getDefaultBundles() (BundleConfig) {
+// 	var bundleconfig BundleConfig
+// 	files, err := defaultBundle.ReadDir("bundles")
+// 	if err != nil {
+// 		fmt.Errorf("unable to process bundles: %v", err)
+// 	}
 
-	// allAddons := []*Bundle{}
+// 	for _, file := range files {
+// 		f, err := defaultBundle.ReadFile(filepath.Join("bundles", file.Name()))
+// 		if err != nil {
+// 			fmt.Printf("unable to read file: %v", err)
+// 			continue
+// 		}
 
-	for _, file := range files {
-		f, err := defaultBundle.ReadFile(filepath.Join("bundles", file.Name()))
+// 		var tempBundleConfig struct {
+// 			Addons []*Bundle `yaml:"addons"`
+// 		}
+// 		if err := yaml.Unmarshal(f, &tempBundleConfig); err != nil {
+//             fmt.Printf("Error unmarshaling file %s: %v\n", f, err)
+//             continue
+//         }
 
-		if err != nil {
-			fmt.Printf("unable to read file: %v", err)
-			continue
-		}
-		content = append(content, f)
-		// var bundleconfig BundleConfig
-		// if err := yaml.Unmarshal(content, &bundleconfig); err != nil {
-		// 	fmt.Printf("unable to unmarshal")
-		// 	continue
-		// }
+// 		bundleconfig.Addons = append(bundleconfig.Addons, tempBundleConfig.Addons...)
 
-		// 	for _, addons := range bundleconfig.Addons {
-		// 		allAddons = append(allAddons, addons)
-		// 	}
-
-		// }
-
-		// combinedAddons := BundleConfig{Addons: allAddons}
-		// fmt.Println(combinedAddons)
-
-		// var filename []string
-		// filenames, err := fs.ReadDir(defaultBundle, "bundles")
-		// if err != nil {
-		// 	return nil, err
-		// }
-		// // TODO: This just grabs the last bundle file in the dir, need to compile them all together to support multiple
-		// for _, f := range filenames {
-		// 	if !f.IsDir() {
-		// 		filename = "bundles/" + f.Name()
-
-		// 	}
-		// }
-
-		// file, err := defaultBundle.Open(filename)
-		// if err != nil {
-		// 	return nil, err
-		// }
-
-		// fmt.Println(combinedAddons)
-
-	}
-	return content, nil
-
-}
+// 	}
+// 	return bundleconfig
+// }

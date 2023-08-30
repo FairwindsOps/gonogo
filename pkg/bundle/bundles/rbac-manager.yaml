@@ -1,0 +1,17 @@
+addons:
+- name: rbac-manager
+  versions:
+    start: 1.17.4
+    end: 1.17.4
+  notes: https://github.com/kubernetes-sigs/metrics-server/releases/tag/v0.6.0
+  source:
+    chart: rbac-manager
+    repository: https://github.com/FairwindsOps/rbac-manager
+  warnings:
+  - "Chart RBAC uses nodes/metrics RBAC resource instead of nodes/stats. If you manage your own RBAC check your settings."
+  compatible_k8s_versions:
+    max: 1.24
+    min: 1.23
+  values_schema: ""
+  resources:
+  opa_checks:

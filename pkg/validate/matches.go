@@ -44,6 +44,7 @@ func (c *Config) getMatches() (matches, error) {
 	finalMatches := matches{}
 
 	config, err := bundle.ReadConfig(c.Bundle)
+	// fmt.Println(config)
 	if err != nil {
 		return nil, err
 	}
