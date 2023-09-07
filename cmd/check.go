@@ -41,9 +41,9 @@ var checkCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) != 0 {
 			for _, fileName := range bundleFile {
-			bundleFile = append(bundleFile, fileName)
+				bundleFile = append(bundleFile, fileName)
+			}
 		}
-	}
 
 		config := &validate.Config{
 			Helm:   helm.NewHelm(),
