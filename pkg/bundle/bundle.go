@@ -107,7 +107,7 @@ func ReadConfig(file []string) (*BundleConfig, error) {
 		for _, str := range file {
 			f, err := os.ReadFile(str)
 			if err != nil {
-				fmt.Printf("unable to read file: %v", err)
+				fmt.Printf("unable to read file: %s", err.Error())
 				continue
 			}
 			if err := yaml.Unmarshal(f, &tempBundleConfig); err != nil {
