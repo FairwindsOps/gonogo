@@ -111,7 +111,7 @@ func ReadConfig(file []string) (*BundleConfig, error) {
 				continue
 			}
 			if err := yaml.Unmarshal(f, &tempBundleConfig); err != nil {
-				fmt.Printf("Error unmarshaling file %s: %v\n", f, err)
+				fmt.Printf("error parsing file %s: %s\n", f, err.Error())
 				continue
 			}
 
