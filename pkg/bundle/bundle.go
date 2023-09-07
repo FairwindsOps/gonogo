@@ -17,11 +17,9 @@ limitations under the License.
 package bundle
 
 import (
+	"embed"
 	"fmt"
 	"os"
-
-	"embed"
-
 	"path/filepath"
 
 	"gopkg.in/yaml.v2"
@@ -76,7 +74,7 @@ func ReadConfig(file []string) (*BundleConfig, error) {
 	if len(file) == 0 {
 		files, err := defaultBundle.ReadDir("bundles")
 		if err != nil {
-			fmt.Errorf("unable to process bundles: %v", err)
+			return nil, fmt.Errorf("unable to process bundles: %v", err)
 		}
 
 		for _, file := range files {
@@ -90,17 +88,8 @@ func ReadConfig(file []string) (*BundleConfig, error) {
 				fmt.Printf("error parsing bundle file %s: %s\n", f, err.Error())
 				continue
 			}
-
 			bundleconfig.Addons = append(bundleconfig.Addons, tempBundleConfig.Addons...)
-			value := *bundleconfig
-			fmt.Println(value)
-
 		}
-		// if err != nil {
-		// 	return nil, fmt.Errorf("failed retrieving default bundle files: %v", err)
-		// }
-		// body = append(body, defaultFiles...)
-		// err = yaml.Unmarshal(body, &bundleconfig)
 	}
 
 	if len(file) > 0 {
@@ -121,31 +110,3 @@ func ReadConfig(file []string) (*BundleConfig, error) {
 
 	return bundleconfig, nil
 }
-
-// func getDefaultBundles() (BundleConfig) {
-// 	var bundleconfig BundleConfig
-// 	files, err := defaultBundle.ReadDir("bundles")
-// 	if err != nil {
-// 		fmt.Errorf("unable to process bundles: %v", err)
-// 	}
-
-// 	for _, file := range files {
-// 		f, err := defaultBundle.ReadFile(filepath.Join("bundles", file.Name()))
-// 		if err != nil {
-// 			fmt.Printf("unable to read file: %v", err)
-// 			continue
-// 		}
-
-// 		var tempBundleConfig struct {
-// 			Addons []*Bundle `yaml:"addons"`
-// 		}
-// 		if err := yaml.Unmarshal(f, &tempBundleConfig); err != nil {
-//             fmt.Printf("Error unmarshaling file %s: %v\n", f, err)
-//             continue
-//         }
-
-// 		bundleconfig.Addons = append(bundleconfig.Addons, tempBundleConfig.Addons...)
-
-// 	}
-// 	return bundleconfig
-// }
