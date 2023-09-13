@@ -90,9 +90,7 @@ func ReadConfig(file []string) (*BundleConfig, error) {
 			}
 			bundleconfig.Addons = append(bundleconfig.Addons, tempBundleConfig.Addons...)
 		}
-	}
-
-	if len(file) > 0 {
+	} else {
 		for _, str := range file {
 			f, err := os.ReadFile(str)
 			if err != nil {
