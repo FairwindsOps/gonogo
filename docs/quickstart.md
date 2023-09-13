@@ -9,13 +9,23 @@ First, follow the install instructions to install gonogo.
 
 ## Bundle Creation
 
-GoNoGo depends on a bundle spec to run its validation. See documenation on creating the bundle spec for more details.
+GoNoGo depends on a bundle spec to run its validation. See documentation on creating the bundle spec for more details.
 
-## Running Against a Bundle Spec
+## Running Against Bundles
 
-Run `gonogo check <PATH TO BUNDLE FILE>` to begin a check of the addon upgrades against the spec you defined in your bundle.
+GoNoGo can be run against one more more bundles files by either using the `-b` flag to pass in separate files
+```
+gonogo check -b /path/to/file/1 -b /path/to/file/2
+```
 
-The resulting output should be a json document with a list of found cluster addons as specified in your bundle file.For each cluster addon in the list, you should see the output of the fields you defined your spec. For example:
+or the `-d` flag to specify a directory containing bundles
+```
+gonogo check -d /path/to/dir
+```
+
+You can also run GoNoGo with no flags and it will use the curated bundle files found in the `pkg/bundle/bundles` directory of this repo.
+
+In all cases the resulting output should be a json document with a list of found cluster addons as specified in your bundle file. For each cluster addon in the list, you should see the output of the fields you defined in your spec. For example:
 
 ```
 {
