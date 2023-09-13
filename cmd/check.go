@@ -17,8 +17,8 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 	"io/fs"
+	"os"
 	"path/filepath"
 
 	"github.com/spf13/cobra"
@@ -45,13 +45,12 @@ var checkCmd = &cobra.Command{
 	Long:    `Check for Helm releases that can be updated`,
 	PreRunE: validateArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println(len(bundleFile))
 		if len(bundleFile) == 0 {
 			if bundleDir != "" {
-				bundleFile = findFiles(bundleDir, ".yaml")
+				t := ".yaml"
+				bundleFile = findFiles(bundleDir, t)
 			}
 		}
-		fmt.Println(bundleFile)
 		config := &validate.Config{
 			Helm:   helm.NewHelm(),
 			Bundle: bundleFile,
@@ -76,14 +75,14 @@ func validateArgs(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func findFiles(d, ext string) []string {
+func findFiles(dir, ext string) []string {
 	var a []string
-	filepath.WalkDir(d, func(s string, d fs.DirEntry, e error) error {
+	filepath.WalkDir(dir, func(path string, d fs.DirEntry, e error) error {
 		if e != nil {
 			return e
 		}
 		if filepath.Ext(d.Name()) == ext {
-			a = append(a, a...)
+			a = append(a, path)
 		}
 		return nil
 	})
