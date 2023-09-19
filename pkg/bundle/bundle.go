@@ -22,6 +22,7 @@ import (
 	"os"
 	"path/filepath"
 
+	multierror "github.com/hashicorp/go-multierror"
 	"gopkg.in/yaml.v2"
 )
 
@@ -69,6 +70,7 @@ func ReadConfig(file []string) (*BundleConfig, error) {
 	var tempBundleConfig struct {
 		Addons []*Bundle `yaml:"addons"`
 	}
+	var allErrs error = nil
 	bundleconfig := &BundleConfig{}
 
 	if len(file) == 0 {
@@ -80,12 +82,12 @@ func ReadConfig(file []string) (*BundleConfig, error) {
 		for _, file := range files {
 			f, err := defaultBundle.ReadFile(filepath.Join("bundles", file.Name()))
 			if err != nil {
-				fmt.Printf("unable to read file: %v", err)
+				allErrs = multierror.Append(allErrs, fmt.Errorf("unable to read file: %v", err))
 				continue
 			}
 
 			if err := yaml.Unmarshal(f, &tempBundleConfig); err != nil {
-				fmt.Printf("error parsing bundle file %s: %s\n", f, err.Error())
+				allErrs = multierror.Append(allErrs, fmt.Errorf("unable to read file: %v", err))
 				continue
 			}
 			bundleconfig.Addons = append(bundleconfig.Addons, tempBundleConfig.Addons...)
@@ -94,11 +96,11 @@ func ReadConfig(file []string) (*BundleConfig, error) {
 		for _, str := range file {
 			f, err := os.ReadFile(str)
 			if err != nil {
-				fmt.Printf("unable to read file: %s", err.Error())
+				allErrs = multierror.Append(allErrs, fmt.Errorf("unable to read file: %v", err))
 				continue
 			}
 			if err := yaml.Unmarshal(f, &tempBundleConfig); err != nil {
-				fmt.Printf("error parsing file %s: %s\n", f, err.Error())
+				allErrs = multierror.Append(allErrs, fmt.Errorf("unable to read file: %v", err))
 				continue
 			}
 
@@ -106,5 +108,5 @@ func ReadConfig(file []string) (*BundleConfig, error) {
 		}
 	}
 
-	return bundleconfig, nil
+	return bundleconfig, allErrs
 }

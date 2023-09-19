@@ -52,12 +52,13 @@ func TestReadConfig(t *testing.T) {
 		{
 			name:    "file is not valid syntax",
 			file:    []string{"testdata/invalid_bundle.yaml"},
-			want:    &BundleConfig{},
+			want:    nil,
 			wantErr: true,
 		},
 		{
 			name:    "file does not exist",
 			file:    []string{"farglebargle"},
+			want: nil,
 			wantErr: true,
 		},
 	}
