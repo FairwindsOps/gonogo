@@ -4,11 +4,10 @@ import (
 	"fmt"
 
 	"github.com/blang/semver/v4"
+	"github.com/thoas/go-funk"
 	clusterVersion "k8s.io/apimachinery/pkg/version"
 	"k8s.io/klog"
-	"github.com/thoas/go-funk"
 )
-
 
 func (m *match) validateClusterVersion(cv *clusterVersion.Info) error {
 	var maxVer, minVer, clusterVer semver.Version
@@ -55,11 +54,11 @@ func (m *match) validateAPIVersion(v []string) {
 	apiVersions := m.Bundle.NecessaryAPIVersions
 
 	for _, av := range apiVersions {
-		if ! funk.Contains(v, av) {
+		if !funk.Contains(v, av) {
 			m.AddonOutput.ActionItems = append(m.AddonOutput.ActionItems, &ActionItem{
 				ResourceNamespace: m.Release.Namespace,
 				ResourceName:      m.Release.Name,
-				Title:             fmt.Sprintf("API version %s is not available",av),
+				Title:             fmt.Sprintf("API version %s is not available", av),
 				Description:       fmt.Sprintf("The Kubernetes cluster version does not contain the api %s", av),
 			})
 		} else {

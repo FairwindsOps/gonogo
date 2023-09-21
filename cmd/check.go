@@ -17,7 +17,9 @@ package cmd
 
 import (
 	"fmt"
+	"io/fs"
 	"os"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 	"k8s.io/klog"
@@ -26,11 +28,15 @@ import (
 	"github.com/fairwindsops/gonogo/pkg/validate"
 )
 
-var bundleFile string
+var (
+	bundleFile []string
+	bundleDir  string
+)
 
 func init() {
 	rootCmd.AddCommand(checkCmd)
-	checkCmd.PersistentFlags().StringVarP(&bundleFile, "bundle", "b", "", "path to a bundle file")
+	checkCmd.PersistentFlags().StringSliceVarP(&bundleFile, "bundle", "b", []string{}, "bundle file(s) to use")
+	checkCmd.PersistentFlags().StringVarP(&bundleDir, "directory", "d", "", "directory to scan for bundle files")
 }
 
 var checkCmd = &cobra.Command{
@@ -39,10 +45,12 @@ var checkCmd = &cobra.Command{
 	Long:    `Check for Helm releases that can be updated`,
 	PreRunE: validateArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) != 0 {
-			bundleFile = args[0]
+		if len(bundleFile) == 0 {
+			if bundleDir != "" {
+				t := ".yaml"
+				bundleFile = findFiles(bundleDir, t)
+			}
 		}
-
 		config := &validate.Config{
 			Helm:   helm.NewHelm(),
 			Bundle: bundleFile,
@@ -65,4 +73,18 @@ func validateArgs(cmd *cobra.Command, args []string) error {
 		}
 	}
 	return nil
+}
+
+func findFiles(dir, ext string) []string {
+	var a []string
+	filepath.WalkDir(dir, func(path string, d fs.DirEntry, e error) error {
+		if e != nil {
+			return e
+		}
+		if filepath.Ext(d.Name()) == ext {
+			a = append(a, path)
+		}
+		return nil
+	})
+	return a
 }

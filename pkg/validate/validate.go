@@ -25,7 +25,7 @@ type Config struct {
 	// Helm is an instance of the local helm package client
 	Helm *helm.Helm
 	// Bundle is the path to the bundle config file
-	Bundle string
+	Bundle []string
 }
 
 // Validate finds matching releases in-cluster,

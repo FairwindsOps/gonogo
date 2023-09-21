@@ -25,13 +25,13 @@ import (
 func TestReadConfig(t *testing.T) {
 	tests := []struct {
 		name    string
-		file    string
+		file    []string
 		want    *BundleConfig
 		wantErr bool
 	}{
 		{
 			name: "bundle1",
-			file: "testdata/bundle_read_check.yaml",
+			file: []string{"testdata/bundle_read_check.yaml"},
 			want: &BundleConfig{
 				Addons: []*Bundle{
 					{
@@ -51,13 +51,14 @@ func TestReadConfig(t *testing.T) {
 		},
 		{
 			name:    "file is not valid syntax",
-			file:    "testdata/invalid_bundle.yaml",
-			want:    &BundleConfig{},
+			file:    []string{"testdata/invalid_bundle.yaml"},
+			want:    nil,
 			wantErr: true,
 		},
 		{
 			name:    "file does not exist",
-			file:    "farglebargle",
+			file:    []string{"farglebargle"},
+			want: nil,
 			wantErr: true,
 		},
 	}
