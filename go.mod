@@ -12,10 +12,10 @@ require (
 	github.com/thoas/go-funk v0.9.3
 	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.1
-	helm.sh/helm/v3 v3.12.3
-	k8s.io/api v0.28.1
-	k8s.io/apimachinery v0.28.1
-	k8s.io/client-go v0.28.1
+	helm.sh/helm/v3 v3.13.0
+	k8s.io/api v0.28.2
+	k8s.io/apimachinery v0.28.2
+	k8s.io/client-go v0.28.2
 	k8s.io/klog v1.0.0
 	k8s.io/klog/v2 v2.100.1
 	sigs.k8s.io/controller-runtime v0.16.2
@@ -91,7 +91,7 @@ require (
 	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
-	k8s.io/apiextensions-apiserver v0.28.1 // indirect
+	k8s.io/apiextensions-apiserver v0.28.2 // indirect
 	k8s.io/kube-openapi v0.0.0-20230905202853-d090da108d2f // indirect
 	k8s.io/utils v0.0.0-20230726121419-3b25d923346b // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
