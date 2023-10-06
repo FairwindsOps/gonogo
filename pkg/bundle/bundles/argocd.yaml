@@ -1,0 +1,11 @@
+addons:
+- name: argo-cd
+  versions:
+    start: 5.45.1
+    end: 5.46.5
+  source:
+    chart: argo-cd
+    repository: https://argoproj.github.io/argo-helm
+  compatible_k8s_versions:
+    max: 1.26
+    min: 1.25

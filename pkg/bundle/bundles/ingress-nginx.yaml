@@ -1,0 +1,11 @@
+addons:
+- name: ingress-nginx
+  versions:
+    start: 4.7.1
+    end: 4.8.0
+  source:
+    chart: ingress-nginx
+    repository: https://kubernetes.github.io/ingress-nginx
+  compatible_k8s_versions:
+    max: 1.26
+    min: 1.25

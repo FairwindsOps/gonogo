@@ -1,0 +1,11 @@
+addons:
+- name: aws-efs-csi-driver
+  versions:
+    start: 1.12.2
+    end: 1.13.1
+  source:
+    chart: cert-manager
+  repository: https://charts.jetstack.io
+  compatible_k8s_versions:
+    max: 1.26
+    min: 1.25

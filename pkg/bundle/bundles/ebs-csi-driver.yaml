@@ -1,0 +1,11 @@
+addons:
+- name: aws-ebs-csi-driver
+  versions:
+    start: 2.21.0
+    end: 2.23.0
+  source:
+    chart: aws-ebs-csi-driver
+  repository: https://kubernetes-sigs.github.io/aws-efs-csi-driver/
+  compatible_k8s_versions:
+    max: 1.26
+    min: 1.25

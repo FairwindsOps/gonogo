@@ -1,0 +1,27 @@
+addons:
+- name: aws-efs-csi-driver
+  versions:
+    start: 2.4.1
+    end: 2.5.0
+  source:
+    chart: aws-efs-csi-driver
+    repository: https://kubernetes-sigs.github.io/aws-efs-csi-driver/
+  warnings:
+    - "Remove event_type field from the Info log when starting a monitor; replace with monitor_type field, with new values. Remove event_type field from the Warn log when a monitor fails to start; replace with monitor_type field, with new values. Below values"
+    - "Value 'REBALANCE_RECOMMENDATION' replaced with 'REBALANCE_RECOMMENDATION_MONITOR'"
+    - "Value 'SCHEDULED_EVENT' replaced with 'SCHEDULED_EVENT_MONITOR'"
+    - "Value 'SPOT_ITN' replaced with 'SPOT_ITN_MONITOR'"
+    - "Value 'SQS_TERMINATE' replaced with 'SQS_MONITOR'"
+    - "Potentially change value of kind field in the Info log, if running Queue Processor mode. Below values"
+    - "Value 'REBALANCE_RECOMMENDATION' replaced with 'REBALANCE_RECOMMENDATION'"
+    - "Value 'SCHEDULED_EVENT' replaced with 'SCHEDULED_EVENT'"
+    - "Value 'SPOT_ITN' replaced with 'SPOT_ITN'"
+    - "Value 'SQS_TERMINATE' replaced with 'REBALANCE_RECOMMENDATION' 'SCHEDULED_EVENT' 'SPOT_ITN' 'STATE_CHANGE' 'ASG_LIFECYCLE'"
+    - "Potentially change the 'reason' field in the k8s event if running Queue Processor mode. Below values"
+    - "Value 'RebalanceRecommendation' replaced with 'RebalanceRecommendation'"
+    - "Value 'SCHEDULED_EVENT' replaced with 'SCHEDULED_EVENT'"
+    - "Value 'SpotInterruption' replaced with 'SpotInterruption'"
+    - "Value 'SQSTermination' replaced with 'RebalanceRecommendation' 'ScheduledEvent' 'SpotInterruption' 'StateChange' 'ASGLifecycle'"
+  compatible_k8s_versions:
+    max: 1.26
+    min: 1.25

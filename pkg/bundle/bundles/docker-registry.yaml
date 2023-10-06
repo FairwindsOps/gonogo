@@ -1,0 +1,11 @@
+addons:
+- name: ingress-nginx
+  versions:
+    start: 1.11.0
+    end: 2.2.2
+  source:
+    chart: docker-registry
+    repository: https://helm.twun.io
+  compatible_k8s_versions:
+    max: 1.26
+    min: 1.25
