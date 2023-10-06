@@ -1,0 +1,11 @@
+addons:
+- name: kube-prometheus-stack
+  versions:
+    start: 41.7.4
+    end: 51.2.0
+  source:
+    chart: kube-prometheus-stack
+    repository: https://prometheus-community.github.io/helm-charts
+  compatible_k8s_versions:
+    max: 1.26
+    min: 1.25

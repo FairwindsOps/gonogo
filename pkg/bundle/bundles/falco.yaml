@@ -1,0 +1,11 @@
+addons:
+- name: falco
+  versions:
+    start: 3.1.2
+    end: 3.7.1
+  source:
+    chart: falcosecurity
+    repository: https://falcosecurity.github.io/charts
+  compatible_k8s_versions:
+    max: 1.26
+    min: 1.25

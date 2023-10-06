@@ -2,15 +2,15 @@ addons:
 - name: metrics-server
   versions:
     start: 3.5.0
-    end: 3.9.1
-  notes: https://github.com/kubernetes-sigs/metrics-server/releases/tag/v0.6.0
+    end: 3.11.0
+  notes: https://github.com/kubernetes-sigs/metrics-server/releases/tag/v0.6.4
   source:
     chart: metrics-server
     repository: https://kubernetes-sigs.github.io/metrics-server
   warnings:
   - "Chart RBAC uses nodes/metrics RBAC resource instead of nodes/stats. If you manage your own RBAC check your settings."
   compatible_k8s_versions:
-    max: 1.24
+    max: 1.26
     min: 1.23
   values_schema: ""
   resources:
