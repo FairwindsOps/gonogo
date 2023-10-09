@@ -7,5 +7,5 @@ addons:
     chart: falcosecurity
     repository: https://falcosecurity.github.io/charts
   compatible_k8s_versions:
-    max: 1.26
+    max: 1.26.7
     min: 1.25
