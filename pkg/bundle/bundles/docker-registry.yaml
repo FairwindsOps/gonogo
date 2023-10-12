@@ -1,5 +1,5 @@
 addons:
-- name: ingress-nginx
+- name: docker-registry
   versions:
     start: 1.11.0
     end: 2.2.2
