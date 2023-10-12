@@ -1,5 +1,5 @@
 addons:
-- name: aws-efs-csi-driver
+- name: cert-manager
   versions:
     start: 1.12.2
     end: 1.13.1
