@@ -1,5 +1,5 @@
 addons:
-- name: ingress-nginx
+- name: helm-release-pruner
   versions:
     start: 3.2.11
     end: 3.2.12
