@@ -1,0 +1,17 @@
+addons:
+- name: kured
+  versions:
+    start: 5.1.0
+    end: 5.2.0
+  notes: https://github.com/kubereboot/kured/releases/tag/1.14.0
+  source:
+    chart: kured
+    repository: https://github.com/kubereboot/charts
+  warnings:
+  - "kured uses kubectl to cordon and drain nodes. The addon app version(s) use kubectl 1.27, which is only compatible with kubernetes 1.26, 1.27 and 1.28."
+  compatible_k8s_versions:
+    max: 1.28
+    min: 1.26
+  values_schema: ""
+  resources:
+  opa_checks:
