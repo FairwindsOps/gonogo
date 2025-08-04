@@ -30,14 +30,14 @@ var (
 )
 
 func init() {
-	rootCmd.AddCommand(generateCmd)
-	generateCmd.PersistentFlags().StringVarP(&outputFormat, "output", "o", "text", "output format (text, json)")
+	rootCmd.AddCommand(helmFetchAllCmd)
+	helmFetchAllCmd.PersistentFlags().StringVarP(&outputFormat, "output", "o", "text", "output format (text, json)")
 }
 
-var generateCmd = &cobra.Command{
-	Use:   "generate",
-	Short: "Generate cluster and helm release version information",
-	Long:  `Generate cluster and helm release version information and print to stdout`,
+var helmFetchAllCmd = &cobra.Command{
+	Use:   "helm-fetch-all",
+	Short: "Fetch all helm releases and cluster version information",
+	Long:  `Fetch all helm releases and cluster version information and print to stdout`,
 	Run: func(cmd *cobra.Command, args []string) {
 		helmClient := helm.NewHelm()
 
