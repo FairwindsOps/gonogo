@@ -18,6 +18,7 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -25,12 +26,16 @@ import (
 	"k8s.io/klog"
 
 	"github.com/fairwindsops/gonogo/pkg/helm"
+	"github.com/fairwindsops/gonogo/pkg/openai"
 )
 
 var (
 	generateOutputFormat string
 	desiredVersion      string
 	helmRepoURL         string
+	openaiAPIKey        string
+	openaiModel         string
+	enableAnalysis      bool
 )
 
 func init() {
@@ -38,6 +43,9 @@ func init() {
 	generateCmd.PersistentFlags().StringVarP(&generateOutputFormat, "output", "o", "text", "output format (text, json)")
 	generateCmd.PersistentFlags().StringVarP(&desiredVersion, "desired-version", "V", "", "desired helm chart version")
 	generateCmd.PersistentFlags().StringVarP(&helmRepoURL, "repo", "r", "", "helm repository URL")
+	generateCmd.PersistentFlags().StringVar(&openaiAPIKey, "openai-api-key", "", "OpenAI API key for upgrade analysis (can also use OPENAI_API_KEY env var)")
+	generateCmd.PersistentFlags().StringVar(&openaiModel, "openai-model", "gpt-4o-mini", "OpenAI model to use for analysis")
+	generateCmd.PersistentFlags().BoolVar(&enableAnalysis, "analyze", false, "Enable OpenAI-powered upgrade analysis")
 	generateCmd.MarkPersistentFlagRequired("desired-version")
 	generateCmd.MarkPersistentFlagRequired("repo")
 }
@@ -45,7 +53,10 @@ func init() {
 var generateCmd = &cobra.Command{
 	Use:   "generate [helm-release-name]",
 	Short: "Generate helm release version information for a specific app",
-	Long:  `Generate helm release version information for a specific app using release name, desired version, and repo URL`,
+	Long:  `Generate helm release version information for a specific app using release name, desired version, and repo URL.
+	
+Use the --analyze flag to enable OpenAI-powered upgrade analysis that provides insights into breaking changes, 
+CRD changes, and upgrade considerations between chart versions.`,
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		releaseName := args[0]
@@ -81,15 +92,16 @@ var generateCmd = &cobra.Command{
 
 		// Prepare output data
 		output := struct {
-			ClusterVersion string `json:"cluster_version"`
-			ReleaseName    string `json:"release_name"`
-			Namespace      string `json:"namespace"`
-			CurrentVersion string `json:"current_version"`
-			AppVersion     string `json:"app_version"`
-			Status         string `json:"status"`
-			DesiredVersion string `json:"desired_version"`
-			RepoURL        string `json:"repo_url"`
-			Upgradeable    bool   `json:"upgradeable"`
+			ClusterVersion string                          `json:"cluster_version"`
+			ReleaseName    string                          `json:"release_name"`
+			Namespace      string                          `json:"namespace"`
+			CurrentVersion string                          `json:"current_version"`
+			AppVersion     string                          `json:"app_version"`
+			Status         string                          `json:"status"`
+			DesiredVersion string                          `json:"desired_version"`
+			RepoURL        string                          `json:"repo_url"`
+			Upgradeable    bool                            `json:"upgradeable"`
+			Analysis       *openai.UpgradeAnalysisResponse `json:"analysis,omitempty"`
 		}{
 			ClusterVersion: clusterVersion.String(),
 			ReleaseName:    targetRelease.Name,
@@ -100,6 +112,17 @@ var generateCmd = &cobra.Command{
 			DesiredVersion: desiredVersion,
 			RepoURL:        helmRepoURL,
 			Upgradeable:    isVersionUpgradeable(targetRelease.Chart.Metadata.Version, desiredVersion),
+		}
+
+		// Perform OpenAI analysis if requested
+		if enableAnalysis {
+			analysis, err := performUpgradeAnalysis(targetRelease.Name, clusterVersion.String(), targetRelease.Chart.Metadata.Version, desiredVersion, helmRepoURL)
+			if err != nil {
+				klog.Errorf("Error performing upgrade analysis: %v", err)
+				// Continue without analysis rather than failing completely
+			} else {
+				output.Analysis = analysis
+			}
 		}
 
 		// Output based on format
@@ -123,6 +146,11 @@ var generateCmd = &cobra.Command{
 			fmt.Printf("Desired Version: %s\n", output.DesiredVersion)
 			fmt.Printf("Repo URL: %s\n", output.RepoURL)
 			fmt.Printf("Upgradeable: %t\n", output.Upgradeable)
+			
+			if output.Analysis != nil {
+				fmt.Printf("\n=== OpenAI Upgrade Analysis ===\n")
+				fmt.Printf("%s\n", output.Analysis.Analysis)
+			}
 		}
 	},
 }
@@ -137,4 +165,37 @@ func isVersionUpgradeable(currentVersion, desiredVersion string) bool {
 	
 	// Simple string comparison - in production you'd want semantic versioning
 	return current != desired
+}
+
+// performUpgradeAnalysis uses OpenAI to analyze the upgrade path
+func performUpgradeAnalysis(appName, clusterVersion, currentVersion, desiredVersion, repoURL string) (*openai.UpgradeAnalysisResponse, error) {
+	// Get API key from flag or environment variable
+	apiKey := openaiAPIKey
+	if apiKey == "" {
+		apiKey = os.Getenv("OPENAI_API_KEY")
+	}
+	
+	if apiKey == "" {
+		return nil, fmt.Errorf("OpenAI API key not provided. Use --openai-api-key flag or set OPENAI_API_KEY environment variable")
+	}
+	
+	// Create OpenAI client
+	var client openai.Client
+	if openaiModel != "" {
+		client = openai.NewClientWithModel(apiKey, openaiModel)
+	} else {
+		client = openai.NewClient(apiKey)
+	}
+	
+	// Prepare input for analysis
+	input := openai.UpgradeAnalysisInput{
+		AppName:             appName,
+		ClusterVersion:      clusterVersion,
+		CurrentChartVersion: currentVersion,
+		DesiredChartVersion: desiredVersion,
+		RepoURL:             repoURL,
+	}
+	
+	// Perform analysis
+	return client.AnalyzeUpgrade(input)
 } 
