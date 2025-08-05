@@ -36,22 +36,22 @@ func (m *MockClient) AnalyzeUpgrade(input UpgradeAnalysisInput) (*UpgradeAnalysi
 
 func TestNewClient(t *testing.T) {
 	client := NewClient("test-api-key")
-	
-	openaiClient, ok := client.(*OpenAIClient)
+
+	gojaClient, ok := client.(*GojaOpenAIClient)
 	assert.True(t, ok)
-	assert.Equal(t, "test-api-key", openaiClient.APIKey)
-	assert.Equal(t, "https://api.openai.com/v1", openaiClient.BaseURL)
-	assert.Equal(t, "gpt-4o-mini", openaiClient.Model)
+	assert.Equal(t, "test-api-key", gojaClient.APIKey)
+	assert.Equal(t, "gpt-4o-search-preview", gojaClient.Model)
+	assert.NotNil(t, gojaClient.vm)
 }
 
 func TestNewClientWithModel(t *testing.T) {
 	client := NewClientWithModel("test-api-key", "gpt-4")
-	
-	openaiClient, ok := client.(*OpenAIClient)
+
+	gojaClient, ok := client.(*GojaOpenAIClient)
 	assert.True(t, ok)
-	assert.Equal(t, "test-api-key", openaiClient.APIKey)
-	assert.Equal(t, "https://api.openai.com/v1", openaiClient.BaseURL)
-	assert.Equal(t, "gpt-4", openaiClient.Model)
+	assert.Equal(t, "test-api-key", gojaClient.APIKey)
+	assert.Equal(t, "gpt-4", gojaClient.Model)
+	assert.NotNil(t, gojaClient.vm)
 }
 
 func TestBuildUpgradeAnalysisPrompt(t *testing.T) {
@@ -64,7 +64,7 @@ func TestBuildUpgradeAnalysisPrompt(t *testing.T) {
 	}
 
 	prompt := buildUpgradeAnalysisPrompt(input)
-	
+
 	// Check that the prompt contains all the expected information
 	assert.Contains(t, prompt, "1.28.0")
 	assert.Contains(t, prompt, "nginx-ingress")
@@ -73,11 +73,13 @@ func TestBuildUpgradeAnalysisPrompt(t *testing.T) {
 	assert.Contains(t, prompt, "https://kubernetes.github.io/ingress-nginx")
 	assert.Contains(t, prompt, "breaking changes")
 	assert.Contains(t, prompt, "CRD changes")
+	assert.Contains(t, prompt, "I don't know")
+	assert.Contains(t, prompt, "verbose analysis")
 }
 
 func TestMockClient(t *testing.T) {
 	mockResponse := &UpgradeAnalysisResponse{
-		Analysis: "Test analysis response",
+		Analysis:        "Test analysis response from goja implementation",
 		BreakingChanges: []string{"Breaking change 1"},
 		Considerations:  []string{"Consideration 1"},
 		Recommendations: []string{"Recommendation 1"},
@@ -96,7 +98,46 @@ func TestMockClient(t *testing.T) {
 	}
 
 	response, err := mockClient.AnalyzeUpgrade(input)
-	
+
 	assert.NoError(t, err)
 	assert.Equal(t, mockResponse, response)
+}
+
+func TestGojaClientSetup(t *testing.T) {
+	client := NewClient("test-api-key").(*GojaOpenAIClient)
+
+	// Test that we can set up the JavaScript environment without errors
+	err := client.setupJavaScriptEnvironment()
+	assert.NoError(t, err)
+
+	// Test that console is available
+	console := client.vm.Get("console")
+	assert.NotNil(t, console)
+
+	// Test that fetch is available
+	fetch := client.vm.Get("fetch")
+	assert.NotNil(t, fetch)
+
+	// Test that we can run basic JavaScript
+	result, err := client.vm.RunString("1 + 1")
+	assert.NoError(t, err)
+	assert.Equal(t, int64(2), result.ToInteger())
+}
+
+func TestGojaClientJavaScriptExecution(t *testing.T) {
+	client := NewClient("test-api-key").(*GojaOpenAIClient)
+
+	// Set up the environment
+	err := client.setupJavaScriptEnvironment()
+	assert.NoError(t, err)
+
+	// Test that the OpenAI class is available
+	result, err := client.vm.RunString("typeof OpenAI")
+	assert.NoError(t, err)
+	assert.Equal(t, "function", result.String())
+
+	// Test that analyzeUpgrade function is available
+	result, err = client.vm.RunString("typeof analyzeUpgrade")
+	assert.NoError(t, err)
+	assert.Equal(t, "function", result.String())
 }
