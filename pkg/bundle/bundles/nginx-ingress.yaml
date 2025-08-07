@@ -1,14 +1,7 @@
 addons:
-- name: nginx-ingress
+- name: gng-nginx
   versions:
-    start: 4.0.0
     end: 4.13.0
-  # notes: https://github.com/kubernetes-sigs/aws-load-balancer-controller/releases/tag/v2.5.0
   source:
     chart: ingress-nginx
     repository: https://kubernetes.github.io/ingress-nginx
-  warnings:
-  - "derp"
-  compatible_k8s_versions:
-    max: 1.32.5
-    min: 1.20.0
