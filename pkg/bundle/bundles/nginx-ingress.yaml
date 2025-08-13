@@ -5,3 +5,22 @@ addons:
   source:
     chart: ingress-nginx
     repository: https://kubernetes.github.io/ingress-nginx
+  resources:
+  - "networking.k8s.io/v1/ingresses"
+  values_schema: ""
+  warnings: []
+  opa_checks: 
+  - >
+    package Fairwinds
+    ingressesWithoutHttpPaths[actionItem] {
+            input.kind == "Ingress"
+            rule := input.spec.rules[_]
+            not rule.http.paths
+            actionItem := {
+              "title": "HTTP Path Not Present",
+              "description": "A bug in version 2.5.0 makes it unable to handle ingress rules without an http path",
+              "severity": 0.1,
+              "remediation": "Upgrade to at least patch version v2.5.1 of the app, chart version 1.5.2. See https://github.com/kubernetes-sigs/aws-load-balancer-controller/releases/tag/v2.5.0 for details",
+              "category": "Reliability"
+            }
+          }

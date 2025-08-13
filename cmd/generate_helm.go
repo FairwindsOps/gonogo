@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v2"
 	"helm.sh/helm/v3/pkg/release"
 	"k8s.io/klog"
 
@@ -102,6 +103,12 @@ CRD changes, and upgrade considerations between chart versions.`,
 				return
 			}
 			processDryRun(args)
+			return
+		}
+
+		// Handle bundle mode with webhook - skip Kubernetes connection
+		if bundleFilePath != "" && webhookURL != "" {
+			processBundleFile(nil, "")
 			return
 		}
 
@@ -200,6 +207,99 @@ func sendToWebhook(data interface{}) error {
 	return nil
 }
 
+// sendJSONToWebhook sends JSON content to the specified n8n webhook URL
+func sendJSONToWebhook(jsonData []byte) error {
+	if webhookURL == "" {
+		return nil // No webhook configured
+	}
+
+	// Validate webhook URL
+	if err := validateWebhookURL(webhookURL); err != nil {
+		return fmt.Errorf("invalid webhook URL: %v", err)
+	}
+
+	klog.Infof("Sending %d bytes of JSON content to webhook: %s", len(jsonData), webhookURL)
+
+	// Create HTTP client with timeout
+	client := &http.Client{
+		Timeout: 30 * time.Second,
+	}
+
+	// Create POST request with JSON content
+	req, err := http.NewRequest("POST", webhookURL, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return fmt.Errorf("failed to create webhook request: %v", err)
+	}
+
+	// Set headers for JSON content
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("User-Agent", "gonogo-generate")
+
+	// Send request
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to send webhook request: %v", err)
+	}
+	defer resp.Body.Close()
+
+	// Read response body for debugging
+	var responseBody []byte
+	if resp.Body != nil {
+		responseBody, _ = io.ReadAll(resp.Body)
+	}
+
+	// Check response status
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return fmt.Errorf("webhook returned non-success status: %d, response: %s", resp.StatusCode, string(responseBody))
+	}
+
+	klog.Infof("Successfully sent JSON data to webhook: %s (status: %d)", webhookURL, resp.StatusCode)
+	return nil
+}
+
+// convertYAMLToJSON converts YAML content to JSON format
+func convertYAMLToJSON(yamlContent string) ([]byte, error) {
+	// Parse YAML into an interface{}
+	var data interface{}
+	err := yaml.Unmarshal([]byte(yamlContent), &data)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse YAML: %v", err)
+	}
+
+	// Convert the YAML structure to JSON-compatible format
+	jsonCompatible := convertToJSONCompatible(data)
+
+	// Convert to JSON with indentation for readability
+	jsonData, err := json.MarshalIndent(jsonCompatible, "", "  ")
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert to JSON: %v", err)
+	}
+
+	return jsonData, nil
+}
+
+// convertToJSONCompatible converts interface{} maps to string maps for JSON compatibility
+func convertToJSONCompatible(data interface{}) interface{} {
+	switch v := data.(type) {
+	case map[interface{}]interface{}:
+		result := make(map[string]interface{})
+		for key, value := range v {
+			if keyStr, ok := key.(string); ok {
+				result[keyStr] = convertToJSONCompatible(value)
+			}
+		}
+		return result
+	case []interface{}:
+		result := make([]interface{}, len(v))
+		for i, item := range v {
+			result[i] = convertToJSONCompatible(item)
+		}
+		return result
+	default:
+		return v
+	}
+}
+
 // validateWebhookURL validates that the webhook URL is properly formatted
 func validateWebhookURL(webhookURL string) error {
 	parsedURL, err := url.Parse(webhookURL)
@@ -274,7 +374,32 @@ type BundleOutput struct {
 
 // processBundleFile processes all addons from a bundle file
 func processBundleFile(helmClient *helm.Helm, clusterVersion string) {
-	// Read bundle configuration
+	// Send JSON converted from YAML to webhook if configured
+	if webhookURL != "" {
+		// Read the raw YAML file content
+		yamlContent, err := os.ReadFile(bundleFilePath)
+		if err != nil {
+			klog.Errorf("Error reading bundle file for webhook: %v", err)
+			return
+		}
+
+		// Convert YAML to JSON
+		jsonData, err := convertYAMLToJSON(string(yamlContent))
+		if err != nil {
+			klog.Errorf("Error converting YAML to JSON: %v", err)
+			return
+		}
+
+		err = sendJSONToWebhook(jsonData)
+		if err != nil {
+			klog.Errorf("Error sending JSON to webhook: %v", err)
+			return
+		}
+		fmt.Printf("Successfully sent bundle JSON (converted from YAML) to webhook: %s\n", webhookURL)
+		return
+	}
+
+	// Read bundle configuration for processing (only if not sending to webhook)
 	bundleConfig, err := bundle.ReadConfig([]string{bundleFilePath})
 	if err != nil {
 		klog.Errorf("Error reading bundle file: %v", err)
@@ -293,17 +418,6 @@ func processBundleFile(helmClient *helm.Helm, clusterVersion string) {
 	output := BundleOutput{
 		ClusterVersion: clusterVersion,
 		Releases:       releases,
-	}
-
-	// Send to webhook if configured
-	if webhookURL != "" {
-		err := sendToWebhook(output)
-		if err != nil {
-			klog.Errorf("Error sending to webhook: %v", err)
-			return
-		}
-		fmt.Printf("Successfully sent bundle data (%d releases) to webhook: %s\n", len(output.Releases), webhookURL)
-		return
 	}
 
 	// Output based on format
@@ -478,66 +592,56 @@ func processSingleRelease(helmClient *helm.Helm, releaseName, clusterVersion, de
 
 // processDryRun creates mock data and tests webhook functionality
 func processDryRun(args []string) {
-	fmt.Println("🔧 Dry-run mode: Creating mock data to test webhook...")
+	fmt.Println("🔧 Dry-run mode: Testing webhook functionality...")
 
 	if bundleFilePath != "" {
-		// Bundle mode dry-run
-		bundleConfig, err := bundle.ReadConfig([]string{bundleFilePath})
+		// Bundle mode dry-run - send actual YAML content converted to JSON
+		yamlContent, err := os.ReadFile(bundleFilePath)
 		if err != nil {
 			klog.Errorf("Error reading bundle file: %v", err)
 			return
 		}
 
-		var releases []ReleaseOutput
-		for _, addon := range bundleConfig.Addons {
-			releases = append(releases, ReleaseOutput{
-				ClusterVersion: "v1.28.0",
-				ReleaseName:    addon.Name,
-				Namespace:      addon.Name + "-system",
-				CurrentVersion: "1.0.0",
-				AppVersion:     "1.0.0",
-				Status:         "deployed",
-				DesiredVersion: addon.Versions.End,
-				RepoURL:        addon.Source.Repository,
-				Upgradeable:    true,
-			})
-		}
-
-		output := BundleOutput{
-			ClusterVersion: "v1.28.0",
-			Releases:       releases,
-		}
-
-		err = sendToWebhook(output)
+		// Convert YAML to JSON
+		jsonData, err := convertYAMLToJSON(string(yamlContent))
 		if err != nil {
-			klog.Errorf("Error sending to webhook: %v", err)
+			klog.Errorf("Error converting YAML to JSON: %v", err)
 			return
 		}
-		fmt.Printf("✅ Successfully sent mock bundle data (%d releases) to webhook: %s\n", len(releases), webhookURL)
+
+		err = sendJSONToWebhook(jsonData)
+		if err != nil {
+			klog.Errorf("Error sending JSON to webhook: %v", err)
+			return
+		}
+		fmt.Printf("✅ Successfully sent bundle JSON (converted from YAML) to webhook: %s\n", webhookURL)
 	} else {
-		// Individual release mode dry-run
+		// Individual release mode dry-run - create mock YAML and convert to JSON
 		releaseName := "test-release"
 		if len(args) > 0 {
 			releaseName = args[0]
 		}
 
-		output := ReleaseOutput{
-			ClusterVersion: "v1.28.0",
-			ReleaseName:    releaseName,
-			Namespace:      releaseName + "-system",
-			CurrentVersion: "1.0.0",
-			AppVersion:     "1.0.0",
-			Status:         "deployed",
-			DesiredVersion: desiredVersion,
-			RepoURL:        helmRepoURL,
-			Upgradeable:    true,
-		}
+		mockYAML := fmt.Sprintf(`addons:
+- name: %s
+  versions:
+    end: %s
+  source:
+    chart: %s
+    repository: %s`, releaseName, desiredVersion, releaseName, helmRepoURL)
 
-		err := sendToWebhook(output)
+		// Convert mock YAML to JSON
+		jsonData, err := convertYAMLToJSON(mockYAML)
 		if err != nil {
-			klog.Errorf("Error sending to webhook: %v", err)
+			klog.Errorf("Error converting mock YAML to JSON: %v", err)
 			return
 		}
-		fmt.Printf("✅ Successfully sent mock release data for '%s' to webhook: %s\n", releaseName, webhookURL)
+
+		err = sendJSONToWebhook(jsonData)
+		if err != nil {
+			klog.Errorf("Error sending JSON to webhook: %v", err)
+			return
+		}
+		fmt.Printf("✅ Successfully sent mock JSON data for '%s' to webhook: %s\n", releaseName, webhookURL)
 	}
 }
