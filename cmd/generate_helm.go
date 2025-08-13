@@ -109,22 +109,22 @@ CRD changes, and upgrade considerations between chart versions.`,
 			return
 		}
 
-		// Handle bundle mode with webhook - skip Kubernetes connection
-		if bundleFilePath != "" && webhookURL != "" {
-			processBundleFile(nil, "")
-			return
-		}
-
 		helmClient := helm.NewHelm()
 
-		// Get cluster version
+		// Get cluster version - always needed for webhook payload
 		clusterVersion, err := helmClient.GetClusterVersion()
 		if err != nil {
 			klog.Errorf("Error getting cluster version: %v", err)
 			return
 		}
 
-		// Get helm releases
+		// Handle bundle mode with webhook - get cluster version but skip helm releases
+		if bundleFilePath != "" && webhookURL != "" {
+			processBundleFile(nil, clusterVersion.String())
+			return
+		}
+
+		// Get helm releases for non-webhook bundle mode or individual release mode
 		err = helmClient.GetReleasesVersionThree()
 		if err != nil {
 			klog.Errorf("Error getting helm releases: %v", err)
@@ -405,18 +405,34 @@ func processBundleFile(helmClient *helm.Helm, clusterVersion string) {
 		}
 
 		// Convert YAML to JSON
-		jsonData, err := convertYAMLToJSON(string(yamlContent))
+		bundleData, err := convertYAMLToJSON(string(yamlContent))
 		if err != nil {
 			klog.Errorf("Error converting YAML to JSON: %v", err)
 			return
 		}
 
-		err = sendJSONToWebhook(jsonData)
+		// Wrap bundle data with cluster version
+		webhookPayload := struct {
+			ClusterVersion string      `json:"cluster_version"`
+			BundleData     interface{} `json:"bundle_data"`
+		}{
+			ClusterVersion: clusterVersion,
+			BundleData:     json.RawMessage(bundleData),
+		}
+
+		// Convert the wrapped payload to JSON
+		finalPayload, err := json.MarshalIndent(webhookPayload, "", "  ")
+		if err != nil {
+			klog.Errorf("Error marshaling webhook payload: %v", err)
+			return
+		}
+
+		err = sendJSONToWebhook(finalPayload)
 		if err != nil {
 			klog.Errorf("Error sending JSON to webhook: %v", err)
 			return
 		}
-		fmt.Printf("Successfully sent bundle JSON (converted from YAML) to webhook: %s\n", webhookURL)
+		fmt.Printf("Successfully sent bundle JSON with cluster version (%s) to webhook: %s\n", clusterVersion, webhookURL)
 		return
 	}
 
@@ -615,8 +631,11 @@ func processSingleRelease(helmClient *helm.Helm, releaseName, clusterVersion, de
 func processDryRun(args []string) {
 	fmt.Println("🔧 Dry-run mode: Testing webhook functionality...")
 
+	// Mock cluster version for dry-run
+	mockClusterVersion := "v1.28.0"
+
 	if bundleFilePath != "" {
-		// Bundle mode dry-run - send actual YAML content converted to JSON
+		// Bundle mode dry-run - send actual YAML content converted to JSON with cluster version
 		yamlContent, err := os.ReadFile(bundleFilePath)
 		if err != nil {
 			klog.Errorf("Error reading bundle file: %v", err)
@@ -624,45 +643,58 @@ func processDryRun(args []string) {
 		}
 
 		// Convert YAML to JSON
-		jsonData, err := convertYAMLToJSON(string(yamlContent))
+		bundleData, err := convertYAMLToJSON(string(yamlContent))
 		if err != nil {
 			klog.Errorf("Error converting YAML to JSON: %v", err)
 			return
 		}
 
-		err = sendJSONToWebhook(jsonData)
+		// Wrap bundle data with cluster version (same as real mode)
+		webhookPayload := struct {
+			ClusterVersion string      `json:"cluster_version"`
+			BundleData     interface{} `json:"bundle_data"`
+		}{
+			ClusterVersion: mockClusterVersion,
+			BundleData:     json.RawMessage(bundleData),
+		}
+
+		// Convert the wrapped payload to JSON
+		finalPayload, err := json.MarshalIndent(webhookPayload, "", "  ")
+		if err != nil {
+			klog.Errorf("Error marshaling webhook payload: %v", err)
+			return
+		}
+
+		err = sendJSONToWebhook(finalPayload)
 		if err != nil {
 			klog.Errorf("Error sending JSON to webhook: %v", err)
 			return
 		}
-		fmt.Printf("✅ Successfully sent bundle JSON (converted from YAML) to webhook: %s\n", webhookURL)
+		fmt.Printf("✅ Successfully sent bundle JSON with mock cluster version (%s) to webhook: %s\n", mockClusterVersion, webhookURL)
 	} else {
-		// Individual release mode dry-run - create mock YAML and convert to JSON
+		// Individual release mode dry-run - create mock release data with cluster version
 		releaseName := "test-release"
 		if len(args) > 0 {
 			releaseName = args[0]
 		}
 
-		mockYAML := fmt.Sprintf(`addons:
-- name: %s
-  versions:
-    end: %s
-  source:
-    chart: %s
-    repository: %s`, releaseName, desiredVersion, releaseName, helmRepoURL)
-
-		// Convert mock YAML to JSON
-		jsonData, err := convertYAMLToJSON(mockYAML)
-		if err != nil {
-			klog.Errorf("Error converting mock YAML to JSON: %v", err)
-			return
+		mockOutput := ReleaseOutput{
+			ClusterVersion: mockClusterVersion,
+			ReleaseName:    releaseName,
+			Namespace:      releaseName + "-system",
+			CurrentVersion: "1.0.0",
+			AppVersion:     "1.0.0",
+			Status:         "deployed",
+			DesiredVersion: desiredVersion,
+			RepoURL:        helmRepoURL,
+			Upgradeable:    true,
 		}
 
-		err = sendJSONToWebhook(jsonData)
+		err := sendToWebhook(mockOutput)
 		if err != nil {
 			klog.Errorf("Error sending JSON to webhook: %v", err)
 			return
 		}
-		fmt.Printf("✅ Successfully sent mock JSON data for '%s' to webhook: %s\n", releaseName, webhookURL)
+		fmt.Printf("✅ Successfully sent mock release data with cluster version (%s) for '%s' to webhook: %s\n", mockClusterVersion, releaseName, webhookURL)
 	}
 }
