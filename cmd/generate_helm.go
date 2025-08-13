@@ -45,6 +45,7 @@ var (
 	enableAnalysis       bool
 	bundleFilePath       string
 	webhookURL           string
+	webhookAPIKey        string
 	dryRun               bool
 )
 
@@ -55,6 +56,7 @@ func init() {
 	generateCmd.PersistentFlags().StringVarP(&helmRepoURL, "repo", "r", "", "helm repository URL")
 	generateCmd.PersistentFlags().StringVarP(&bundleFilePath, "bundle", "b", "", "bundle file path (alternative to individual flags)")
 	generateCmd.PersistentFlags().StringVar(&webhookURL, "webhook", "", "n8n webhook URL to send release information to")
+	generateCmd.PersistentFlags().StringVar(&webhookAPIKey, "webhook-api-key", "", "API key for webhook authentication (can also use GNG_API_KEY env var)")
 	generateCmd.PersistentFlags().BoolVar(&dryRun, "dry-run", false, "test webhook without connecting to Kubernetes (creates mock data)")
 	generateCmd.PersistentFlags().StringVar(&openaiAPIKey, "openai-api-key", "", "OpenAI API key for upgrade analysis (can also use OPENAI_API_KEY env var)")
 	generateCmd.PersistentFlags().StringVar(&openaiModel, "openai-model", "gpt-4o-mini", "OpenAI model to use for analysis")
@@ -70,6 +72,7 @@ or for multiple addons specified in a bundle file.
 When using a bundle file, the command will process all addons in the bundle and use the versions.end field as the desired version.
 
 Use the --webhook flag to send the release information to an n8n webhook URL instead of printing to stdout.
+Use the --webhook-api-key flag or GNG_API_KEY environment variable to provide authentication for the webhook.
 Use the --dry-run flag to test webhook functionality without connecting to Kubernetes (creates mock data).
 
 Use the --analyze flag to enable OpenAI-powered upgrade analysis that provides insights into breaking changes, 
@@ -185,6 +188,11 @@ func sendToWebhook(data interface{}) error {
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("User-Agent", "gonogo-generate")
 
+	// Add API key header if provided
+	if apiKey := getWebhookAPIKey(); apiKey != "" {
+		req.Header.Set("x-api-key", apiKey)
+	}
+
 	// Send request
 	resp, err := client.Do(req)
 	if err != nil {
@@ -234,6 +242,11 @@ func sendJSONToWebhook(jsonData []byte) error {
 	// Set headers for JSON content
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("User-Agent", "gonogo-generate")
+
+	// Add API key header if provided
+	if apiKey := getWebhookAPIKey(); apiKey != "" {
+		req.Header.Set("x-api-key", apiKey)
+	}
 
 	// Send request
 	resp, err := client.Do(req)
@@ -298,6 +311,14 @@ func convertToJSONCompatible(data interface{}) interface{} {
 	default:
 		return v
 	}
+}
+
+// getWebhookAPIKey returns the webhook API key from command line flag or environment variable
+func getWebhookAPIKey() string {
+	if webhookAPIKey != "" {
+		return webhookAPIKey
+	}
+	return os.Getenv("GNG_API_KEY")
 }
 
 // validateWebhookURL validates that the webhook URL is properly formatted
