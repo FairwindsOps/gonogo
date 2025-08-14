@@ -118,16 +118,16 @@ CRD changes, and upgrade considerations between chart versions.`,
 			return
 		}
 
-		// Handle bundle mode with webhook - get cluster version but skip helm releases
-		if bundleFilePath != "" && webhookURL != "" {
-			processBundleFile(nil, clusterVersion.String())
-			return
-		}
-
-		// Get helm releases for non-webhook bundle mode or individual release mode
+		// Get helm releases - always needed to get current versions
 		err = helmClient.GetReleasesVersionThree()
 		if err != nil {
 			klog.Errorf("Error getting helm releases: %v", err)
+			return
+		}
+
+		// Handle bundle mode with webhook - now includes current versions
+		if bundleFilePath != "" && webhookURL != "" {
+			processBundleFile(helmClient, clusterVersion.String())
 			return
 		}
 
@@ -393,6 +393,14 @@ type BundleOutput struct {
 	Releases       []ReleaseOutput `json:"releases"`
 }
 
+// CurrentVersionInfo represents the current version information for a release in the cluster
+type CurrentVersionInfo struct {
+	CurrentVersion string `json:"current_version"`
+	AppVersion     string `json:"app_version"`
+	Namespace      string `json:"namespace"`
+	Status         string `json:"status"`
+}
+
 // processBundleFile processes all addons from a bundle file
 func processBundleFile(helmClient *helm.Helm, clusterVersion string) {
 	// Send JSON converted from YAML to webhook if configured
@@ -411,13 +419,38 @@ func processBundleFile(helmClient *helm.Helm, clusterVersion string) {
 			return
 		}
 
-		// Wrap bundle data with cluster version
+		// Get current versions from Helm releases
+		currentVersions := make(map[string]CurrentVersionInfo)
+		if helmClient != nil {
+			bundleConfig, err := bundle.ReadConfig([]string{bundleFilePath})
+			if err != nil {
+				klog.Errorf("Error reading bundle config for current versions: %v", err)
+			} else {
+				for _, addon := range bundleConfig.Addons {
+					for _, release := range helmClient.Releases {
+						if release.Name == addon.Name {
+							currentVersions[addon.Name] = CurrentVersionInfo{
+								CurrentVersion: release.Chart.Metadata.Version,
+								AppVersion:     release.Chart.Metadata.AppVersion,
+								Namespace:      release.Namespace,
+								Status:         string(release.Info.Status),
+							}
+							break
+						}
+					}
+				}
+			}
+		}
+
+		// Wrap bundle data with cluster version and current versions
 		webhookPayload := struct {
-			ClusterVersion string      `json:"cluster_version"`
-			BundleData     interface{} `json:"bundle_data"`
+			ClusterVersion  string                        `json:"cluster_version"`
+			BundleData      interface{}                   `json:"bundle_data"`
+			CurrentVersions map[string]CurrentVersionInfo `json:"current_versions"`
 		}{
-			ClusterVersion: clusterVersion,
-			BundleData:     json.RawMessage(bundleData),
+			ClusterVersion:  clusterVersion,
+			BundleData:      json.RawMessage(bundleData),
+			CurrentVersions: currentVersions,
 		}
 
 		// Convert the wrapped payload to JSON
@@ -432,7 +465,7 @@ func processBundleFile(helmClient *helm.Helm, clusterVersion string) {
 			klog.Errorf("Error sending JSON to webhook: %v", err)
 			return
 		}
-		fmt.Printf("Successfully sent bundle JSON with cluster version (%s) to webhook: %s\n", clusterVersion, webhookURL)
+		fmt.Printf("Successfully sent bundle JSON with cluster version (%s) and current versions to webhook: %s\n", clusterVersion, webhookURL)
 		return
 	}
 
@@ -635,7 +668,7 @@ func processDryRun(args []string) {
 	mockClusterVersion := "v1.28.0"
 
 	if bundleFilePath != "" {
-		// Bundle mode dry-run - send actual YAML content converted to JSON with cluster version
+		// Bundle mode dry-run - send actual YAML content converted to JSON with cluster version and mock current versions
 		yamlContent, err := os.ReadFile(bundleFilePath)
 		if err != nil {
 			klog.Errorf("Error reading bundle file: %v", err)
@@ -649,13 +682,29 @@ func processDryRun(args []string) {
 			return
 		}
 
-		// Wrap bundle data with cluster version (same as real mode)
+		// Create mock current versions
+		mockCurrentVersions := make(map[string]CurrentVersionInfo)
+		bundleConfig, err := bundle.ReadConfig([]string{bundleFilePath})
+		if err == nil {
+			for _, addon := range bundleConfig.Addons {
+				mockCurrentVersions[addon.Name] = CurrentVersionInfo{
+					CurrentVersion: "1.0.0", // Mock current version
+					AppVersion:     "1.0.0", // Mock app version
+					Namespace:      addon.Name + "-system",
+					Status:         "deployed",
+				}
+			}
+		}
+
+		// Wrap bundle data with cluster version and current versions (same as real mode)
 		webhookPayload := struct {
-			ClusterVersion string      `json:"cluster_version"`
-			BundleData     interface{} `json:"bundle_data"`
+			ClusterVersion  string                        `json:"cluster_version"`
+			BundleData      interface{}                   `json:"bundle_data"`
+			CurrentVersions map[string]CurrentVersionInfo `json:"current_versions"`
 		}{
-			ClusterVersion: mockClusterVersion,
-			BundleData:     json.RawMessage(bundleData),
+			ClusterVersion:  mockClusterVersion,
+			BundleData:      json.RawMessage(bundleData),
+			CurrentVersions: mockCurrentVersions,
 		}
 
 		// Convert the wrapped payload to JSON
@@ -670,7 +719,7 @@ func processDryRun(args []string) {
 			klog.Errorf("Error sending JSON to webhook: %v", err)
 			return
 		}
-		fmt.Printf("✅ Successfully sent bundle JSON with mock cluster version (%s) to webhook: %s\n", mockClusterVersion, webhookURL)
+		fmt.Printf("✅ Successfully sent bundle JSON with mock cluster version (%s) and current versions to webhook: %s\n", mockClusterVersion, webhookURL)
 	} else {
 		// Individual release mode dry-run - create mock release data with cluster version
 		releaseName := "test-release"
