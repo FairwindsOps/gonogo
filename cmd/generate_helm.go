@@ -47,6 +47,8 @@ var (
 	webhookURL           string
 	webhookAPIKey        string
 	dryRun               bool
+	// New flags for future JSON response handling
+	outputBundleFile string
 )
 
 func init() {
@@ -61,6 +63,8 @@ func init() {
 	generateCmd.PersistentFlags().StringVar(&openaiAPIKey, "openai-api-key", "", "OpenAI API key for upgrade analysis (can also use OPENAI_API_KEY env var)")
 	generateCmd.PersistentFlags().StringVar(&openaiModel, "openai-model", "gpt-4o-mini", "OpenAI model to use for analysis")
 	generateCmd.PersistentFlags().BoolVar(&enableAnalysis, "analyze", false, "Enable OpenAI-powered upgrade analysis")
+	// New flags for future JSON response handling
+	generateCmd.PersistentFlags().StringVar(&outputBundleFile, "output-bundle", "", "output file path for warning messages received from webhook JSON response. If same as --bundle, warnings will be merged into the bundle file")
 }
 
 var generateCmd = &cobra.Command{
@@ -76,7 +80,11 @@ Use the --webhook-api-key flag or GNG_API_KEY environment variable to provide au
 Use the --dry-run flag to test webhook functionality without connecting to Kubernetes (creates mock data).
 
 Use the --analyze flag to enable OpenAI-powered upgrade analysis that provides insights into breaking changes, 
-CRD changes, and upgrade considerations between chart versions.`,
+CRD changes, and upgrade considerations between chart versions.
+
+For webhook integrations that return JSON responses containing warning messages:
+Use the --output-bundle flag to specify an output file for the warning messages from the webhook response.
+If --output-bundle is the same as --bundle, the warnings will be merged directly into the bundle file.`,
 	Args: cobra.MaximumNArgs(1),
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		// Validate that either bundle file is provided or individual release mode args are provided
@@ -401,6 +409,224 @@ type CurrentVersionInfo struct {
 	Status         string `json:"status"`
 }
 
+// WebhookJSONResponse represents the expected JSON response from webhook containing warning messages
+type WebhookJSONResponse struct {
+	Addons []WebhookAddon `json:"addons"`
+	Status string         `json:"status"`
+}
+
+// WebhookAddon represents an addon with warnings in the webhook response
+type WebhookAddon struct {
+	Name     string   `json:"name"`
+	Warnings []string `json:"warnings"`
+}
+
+// BundleStringData represents individual bundle data as a string that can be unmarshalled
+type BundleStringData struct {
+	Addons []*bundle.Bundle `yaml:"addons"`
+}
+
+// sendToWebhookWithResponse sends data to webhook and optionally expects a JSON response
+func sendToWebhookWithResponse(data interface{}) (*WebhookJSONResponse, error) {
+	if webhookURL == "" {
+		return nil, nil // No webhook configured
+	}
+
+	// Validate webhook URL
+	if err := validateWebhookURL(webhookURL); err != nil {
+		return nil, fmt.Errorf("invalid webhook URL: %v", err)
+	}
+
+	// Convert data to JSON
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal data for webhook: %v", err)
+	}
+
+	klog.Infof("Sending %d bytes to webhook: %s", len(jsonData), webhookURL)
+
+	// Create HTTP client with timeout
+	client := &http.Client{
+		Timeout: 30 * time.Second,
+	}
+
+	// Create POST request
+	req, err := http.NewRequest("POST", webhookURL, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create webhook request: %v", err)
+	}
+
+	// Set headers
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("User-Agent", "gonogo-generate")
+
+	// Add API key header if provided
+	if apiKey := getWebhookAPIKey(); apiKey != "" {
+		req.Header.Set("x-api-key", apiKey)
+	}
+
+	// Send request
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to send webhook request: %v", err)
+	}
+	defer resp.Body.Close()
+
+	// Read response body
+	var responseBody []byte
+	if resp.Body != nil {
+		responseBody, err = io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read response body: %v", err)
+		}
+	}
+
+	// Check response status - allow 500 status codes for JSON response validation
+	if resp.StatusCode < 200 || (resp.StatusCode >= 300 && resp.StatusCode != 500) {
+		return nil, fmt.Errorf("webhook returned non-success status: %d, response: %s", resp.StatusCode, string(responseBody))
+	}
+
+	klog.Infof("Successfully sent data to webhook: %s (status: %d)", webhookURL, resp.StatusCode)
+
+	// Always try to parse JSON response if response body is not empty
+	if len(responseBody) > 0 {
+		var webhookResponse WebhookJSONResponse
+		if err := json.Unmarshal(responseBody, &webhookResponse); err != nil {
+			// If JSON parsing fails, it's not a JSON response, so return nil (no response to process)
+			klog.V(2).Infof("Response is not valid JSON, treating as non-JSON response")
+			return nil, nil
+		}
+		// Validate that status is "success" before processing
+		if webhookResponse.Status != "success" {
+			return nil, fmt.Errorf("webhook returned non-success status: %s", webhookResponse.Status)
+		}
+		return &webhookResponse, nil
+	}
+
+	return nil, nil
+}
+
+// processWebhookJSONResponse processes the JSON response from webhook containing warning messages
+func processWebhookJSONResponse(response *WebhookJSONResponse) error {
+	if response == nil {
+		return fmt.Errorf("no response received from webhook")
+	}
+
+	if len(response.Addons) == 0 {
+		fmt.Println("✅ No addons with warnings received from webhook")
+		return nil
+	}
+
+	klog.Infof("Received %d addons with warnings from webhook", len(response.Addons))
+
+	// Write warning messages to output file if specified
+	if outputBundleFile != "" {
+		// Check if output file is the same as input bundle file
+		if bundleFilePath != "" && outputBundleFile == bundleFilePath {
+			// Merge warnings back into the original bundle file
+			if err := mergeWarningsIntoBundle(response); err != nil {
+				return fmt.Errorf("failed to merge warnings into bundle file: %v", err)
+			}
+			fmt.Printf("✅ Successfully merged warnings for %d addons into bundle file: %s\n", len(response.Addons), outputBundleFile)
+		} else {
+			// Write warnings to separate file
+			if err := writeWarningsToFile(response); err != nil {
+				return fmt.Errorf("failed to write warnings to file: %v", err)
+			}
+			fmt.Printf("✅ Successfully wrote warnings for %d addons to: %s\n", len(response.Addons), outputBundleFile)
+		}
+	} else {
+		// Print to stdout
+		fmt.Printf("⚠️  Received warnings for %d addons from webhook:\n", len(response.Addons))
+		for _, addon := range response.Addons {
+			fmt.Printf("\n📦 Addon: %s\n", addon.Name)
+			if len(addon.Warnings) == 0 {
+				fmt.Printf("  ✅ No warnings\n")
+			} else {
+				for i, warning := range addon.Warnings {
+					fmt.Printf("  %d. %s\n", i+1, warning)
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+// mergeWarningsIntoBundle merges the warnings from webhook response into the original bundle file
+func mergeWarningsIntoBundle(response *WebhookJSONResponse) error {
+	// Read the original bundle file
+	bundleConfig, err := bundle.ReadConfig([]string{bundleFilePath})
+	if err != nil {
+		return fmt.Errorf("failed to read bundle file for merging: %v", err)
+	}
+
+	// Create a map of addon names to warnings for quick lookup
+	warningsMap := make(map[string][]string)
+	for _, addon := range response.Addons {
+		warningsMap[addon.Name] = addon.Warnings
+	}
+
+	// Merge warnings into the bundle addons
+	for _, addon := range bundleConfig.Addons {
+		if warnings, exists := warningsMap[addon.Name]; exists {
+			// Append new warnings to existing ones (avoid duplicates)
+			existingWarnings := make(map[string]bool)
+			for _, warning := range addon.Warnings {
+				existingWarnings[warning] = true
+			}
+
+			for _, warning := range warnings {
+				if !existingWarnings[warning] {
+					addon.Warnings = append(addon.Warnings, warning)
+				}
+			}
+		}
+	}
+
+	// Write the updated bundle back to the file
+	if err := writeBundleToFile(bundleConfig); err != nil {
+		return fmt.Errorf("failed to write updated bundle file: %v", err)
+	}
+
+	return nil
+}
+
+// writeWarningsToFile writes warnings to a separate file
+func writeWarningsToFile(response *WebhookJSONResponse) error {
+	// Convert addons with warnings to a structured format
+	warningData := map[string]interface{}{
+		"addons": response.Addons,
+	}
+
+	// Convert to YAML
+	yamlData, err := yaml.Marshal(warningData)
+	if err != nil {
+		return fmt.Errorf("failed to marshal warning data to YAML: %v", err)
+	}
+
+	if err := os.WriteFile(outputBundleFile, yamlData, 0644); err != nil {
+		return fmt.Errorf("failed to write warnings to file %s: %v", outputBundleFile, err)
+	}
+
+	return nil
+}
+
+// writeBundleToFile writes the bundle configuration back to the file
+func writeBundleToFile(bundleConfig *bundle.BundleConfig) error {
+	// Convert bundle config to YAML
+	yamlData, err := yaml.Marshal(bundleConfig)
+	if err != nil {
+		return fmt.Errorf("failed to marshal bundle config to YAML: %v", err)
+	}
+
+	if err := os.WriteFile(bundleFilePath, yamlData, 0644); err != nil {
+		return fmt.Errorf("failed to write bundle file %s: %v", bundleFilePath, err)
+	}
+
+	return nil
+}
+
 // processBundleFile processes all addons from a bundle file
 func processBundleFile(helmClient *helm.Helm, clusterVersion string) {
 	// Send JSON converted from YAML to webhook if configured
@@ -460,12 +686,22 @@ func processBundleFile(helmClient *helm.Helm, clusterVersion string) {
 			return
 		}
 
-		err = sendJSONToWebhook(finalPayload)
+		// Use webhook function that handles both JSON and non-JSON responses
+		response, err := sendToWebhookWithResponse(finalPayload)
 		if err != nil {
-			klog.Errorf("Error sending JSON to webhook: %v", err)
+			klog.Errorf("Error sending data to webhook with response: %v", err)
 			return
 		}
-		fmt.Printf("Successfully sent bundle JSON with cluster version (%s) and current versions to webhook: %s\n", clusterVersion, webhookURL)
+		// Process the JSON response if received
+		if response != nil {
+			if err := processWebhookJSONResponse(response); err != nil {
+				klog.Errorf("Error processing webhook JSON response: %v", err)
+				return
+			}
+		} else {
+			// No JSON response to process, just confirm the webhook call was successful
+			fmt.Printf("Successfully sent bundle JSON with cluster version (%s) and current versions to webhook: %s\n", clusterVersion, webhookURL)
+		}
 		return
 	}
 
@@ -520,7 +756,6 @@ func processBundleFile(helmClient *helm.Helm, clusterVersion string) {
 			fmt.Printf("Namespace: %s\n", release.Namespace)
 			fmt.Printf("Current Version: %s\n", release.CurrentVersion)
 			fmt.Printf("App Version: %s\n", release.AppVersion)
-			fmt.Printf("Status: %s\n", release.Status)
 			fmt.Printf("Desired Version: %s\n", release.DesiredVersion)
 			fmt.Printf("Repo URL: %s\n", release.RepoURL)
 			fmt.Printf("Upgradeable: %t\n", release.Upgradeable)
@@ -622,12 +857,23 @@ func processSingleRelease(helmClient *helm.Helm, releaseName, clusterVersion, de
 
 	// Send to webhook if configured
 	if webhookURL != "" {
-		err := sendToWebhook(output)
+		// Use webhook function that handles both JSON and non-JSON responses
+		response, err := sendToWebhookWithResponse(output)
 		if err != nil {
-			klog.Errorf("Error sending to webhook: %v", err)
+			klog.Errorf("Error sending data to webhook with response: %v", err)
 			return
 		}
-		fmt.Printf("Successfully sent release data for '%s' to webhook: %s\n", output.ReleaseName, webhookURL)
+
+		// Process the JSON response if received
+		if response != nil {
+			if err := processWebhookJSONResponse(response); err != nil {
+				klog.Errorf("Error processing webhook JSON response: %v", err)
+				return
+			}
+		} else {
+			// No JSON response to process, just confirm the webhook call was successful
+			fmt.Printf("Successfully sent release data for '%s' to webhook: %s\n", output.ReleaseName, webhookURL)
+		}
 		return
 	}
 
@@ -714,12 +960,22 @@ func processDryRun(args []string) {
 			return
 		}
 
-		err = sendJSONToWebhook(finalPayload)
+		// Test webhook function that handles both JSON and non-JSON responses
+		response, err := sendToWebhookWithResponse(finalPayload)
 		if err != nil {
-			klog.Errorf("Error sending JSON to webhook: %v", err)
+			klog.Errorf("Error sending data to webhook with response: %v", err)
 			return
 		}
-		fmt.Printf("✅ Successfully sent bundle JSON with mock cluster version (%s) and current versions to webhook: %s\n", mockClusterVersion, webhookURL)
+		// Process the JSON response if received
+		if response != nil {
+			if err := processWebhookJSONResponse(response); err != nil {
+				klog.Errorf("Error processing webhook JSON response: %v", err)
+				return
+			}
+		} else {
+			// No JSON response to process, just confirm the webhook call was successful
+			fmt.Printf("✅ Successfully sent bundle JSON with mock cluster version (%s) and current versions to webhook: %s\n", mockClusterVersion, webhookURL)
+		}
 	} else {
 		// Individual release mode dry-run - create mock release data with cluster version
 		releaseName := "test-release"
@@ -739,11 +995,21 @@ func processDryRun(args []string) {
 			Upgradeable:    true,
 		}
 
-		err := sendToWebhook(mockOutput)
+		// Test webhook function that handles both JSON and non-JSON responses
+		response, err := sendToWebhookWithResponse(mockOutput)
 		if err != nil {
-			klog.Errorf("Error sending JSON to webhook: %v", err)
+			klog.Errorf("Error sending data to webhook with response: %v", err)
 			return
 		}
-		fmt.Printf("✅ Successfully sent mock release data with cluster version (%s) for '%s' to webhook: %s\n", mockClusterVersion, releaseName, webhookURL)
+		// Process the JSON response if received
+		if response != nil {
+			if err := processWebhookJSONResponse(response); err != nil {
+				klog.Errorf("Error processing webhook JSON response: %v", err)
+				return
+			}
+		} else {
+			// No JSON response to process, just confirm the webhook call was successful
+			fmt.Printf("✅ Successfully sent mock release data with cluster version (%s) for '%s' to webhook: %s\n", mockClusterVersion, releaseName, webhookURL)
+		}
 	}
 }
