@@ -47,8 +47,6 @@ var (
 	webhookURL           string
 	webhookAPIKey        string
 	dryRun               bool
-	// New flags for future JSON response handling
-	outputBundleFile string
 )
 
 func init() {
@@ -63,8 +61,6 @@ func init() {
 	generateCmd.PersistentFlags().StringVar(&openaiAPIKey, "openai-api-key", "", "OpenAI API key for upgrade analysis (can also use OPENAI_API_KEY env var)")
 	generateCmd.PersistentFlags().StringVar(&openaiModel, "openai-model", "gpt-4o-mini", "OpenAI model to use for analysis")
 	generateCmd.PersistentFlags().BoolVar(&enableAnalysis, "analyze", false, "Enable OpenAI-powered upgrade analysis")
-	// New flags for future JSON response handling
-	generateCmd.PersistentFlags().StringVar(&outputBundleFile, "output-bundle", "", "output file path for warning messages received from webhook JSON response. If same as --bundle, warnings will be merged into the bundle file")
 }
 
 var generateCmd = &cobra.Command{
@@ -83,8 +79,7 @@ Use the --analyze flag to enable OpenAI-powered upgrade analysis that provides i
 CRD changes, and upgrade considerations between chart versions.
 
 For webhook integrations that return JSON responses containing warning messages:
-Use the --output-bundle flag to specify an output file for the warning messages from the webhook response.
-If --output-bundle is the same as --bundle, the warnings will be merged directly into the bundle file.`,
+Warning messages from the webhook response will be automatically merged into the bundle file specified by --bundle.`,
 	Args: cobra.MaximumNArgs(1),
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		// Validate that either bundle file is provided or individual release mode args are provided
@@ -519,24 +514,14 @@ func processWebhookJSONResponse(response *WebhookJSONResponse) error {
 
 	klog.Infof("Received %d addons with warnings from webhook", len(response.Addons))
 
-	// Write warning messages to output file if specified
-	if outputBundleFile != "" {
-		// Check if output file is the same as input bundle file
-		if bundleFilePath != "" && outputBundleFile == bundleFilePath {
-			// Merge warnings back into the original bundle file
-			if err := mergeWarningsIntoBundle(response); err != nil {
-				return fmt.Errorf("failed to merge warnings into bundle file: %v", err)
-			}
-			fmt.Printf("✅ Successfully merged warnings for %d addons into bundle file: %s\n", len(response.Addons), outputBundleFile)
-		} else {
-			// Write warnings to separate file
-			if err := writeWarningsToFile(response); err != nil {
-				return fmt.Errorf("failed to write warnings to file: %v", err)
-			}
-			fmt.Printf("✅ Successfully wrote warnings for %d addons to: %s\n", len(response.Addons), outputBundleFile)
+	// Always merge warnings back into the bundle file if bundle file is specified
+	if bundleFilePath != "" {
+		if err := mergeWarningsIntoBundle(response); err != nil {
+			return fmt.Errorf("failed to merge warnings into bundle file: %v", err)
 		}
+		fmt.Printf("✅ Successfully merged warnings for %d addons into bundle file: %s\n", len(response.Addons), bundleFilePath)
 	} else {
-		// Print to stdout
+		// Print to stdout if no bundle file specified
 		fmt.Printf("⚠️  Received warnings for %d addons from webhook:\n", len(response.Addons))
 		for _, addon := range response.Addons {
 			fmt.Printf("\n📦 Addon: %s\n", addon.Name)
@@ -587,26 +572,6 @@ func mergeWarningsIntoBundle(response *WebhookJSONResponse) error {
 	// Write the updated bundle back to the file
 	if err := writeBundleToFile(bundleConfig); err != nil {
 		return fmt.Errorf("failed to write updated bundle file: %v", err)
-	}
-
-	return nil
-}
-
-// writeWarningsToFile writes warnings to a separate file
-func writeWarningsToFile(response *WebhookJSONResponse) error {
-	// Convert addons with warnings to a structured format
-	warningData := map[string]any{
-		"addons": response.Addons,
-	}
-
-	// Convert to YAML
-	yamlData, err := yaml.Marshal(warningData)
-	if err != nil {
-		return fmt.Errorf("failed to marshal warning data to YAML: %v", err)
-	}
-
-	if err := os.WriteFile(outputBundleFile, yamlData, 0644); err != nil {
-		return fmt.Errorf("failed to write warnings to file %s: %v", outputBundleFile, err)
 	}
 
 	return nil
