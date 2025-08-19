@@ -163,7 +163,7 @@ func isVersionUpgradeable(currentVersion, desiredVersion string) bool {
 }
 
 // sendToWebhook sends the data to the specified n8n webhook URL
-func sendToWebhook(data interface{}) error {
+func sendToWebhook(data any) error {
 	if webhookURL == "" {
 		return nil // No webhook configured
 	}
@@ -280,8 +280,8 @@ func sendJSONToWebhook(jsonData []byte) error {
 
 // convertYAMLToJSON converts YAML content to JSON format
 func convertYAMLToJSON(yamlContent string) ([]byte, error) {
-	// Parse YAML into an interface{}
-	var data interface{}
+	// Parse YAML into an any
+	var data any
 	err := yaml.Unmarshal([]byte(yamlContent), &data)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse YAML: %v", err)
@@ -299,19 +299,19 @@ func convertYAMLToJSON(yamlContent string) ([]byte, error) {
 	return jsonData, nil
 }
 
-// convertToJSONCompatible converts interface{} maps to string maps for JSON compatibility
-func convertToJSONCompatible(data interface{}) interface{} {
+// convertToJSONCompatible converts any maps to string maps for JSON compatibility
+func convertToJSONCompatible(data any) any {
 	switch v := data.(type) {
-	case map[interface{}]interface{}:
-		result := make(map[string]interface{})
+	case map[any]any:
+		result := make(map[string]any)
 		for key, value := range v {
 			if keyStr, ok := key.(string); ok {
 				result[keyStr] = convertToJSONCompatible(value)
 			}
 		}
 		return result
-	case []interface{}:
-		result := make([]interface{}, len(v))
+	case []any:
+		result := make([]any, len(v))
 		for i, item := range v {
 			result[i] = convertToJSONCompatible(item)
 		}
@@ -427,7 +427,7 @@ type BundleStringData struct {
 }
 
 // sendToWebhookWithResponse sends data to webhook and optionally expects a JSON response
-func sendToWebhookWithResponse(data interface{}) (*WebhookJSONResponse, error) {
+func sendToWebhookWithResponse(data any) (*WebhookJSONResponse, error) {
 	if webhookURL == "" {
 		return nil, nil // No webhook configured
 	}
@@ -595,7 +595,7 @@ func mergeWarningsIntoBundle(response *WebhookJSONResponse) error {
 // writeWarningsToFile writes warnings to a separate file
 func writeWarningsToFile(response *WebhookJSONResponse) error {
 	// Convert addons with warnings to a structured format
-	warningData := map[string]interface{}{
+	warningData := map[string]any{
 		"addons": response.Addons,
 	}
 
@@ -668,26 +668,26 @@ func processBundleFile(helmClient *helm.Helm, clusterVersion string) {
 			}
 		}
 
-		// Wrap bundle data with cluster version and current versions
-		webhookPayload := struct {
-			ClusterVersion  string                        `json:"cluster_version"`
-			BundleData      interface{}                   `json:"bundle_data"`
-			CurrentVersions map[string]CurrentVersionInfo `json:"current_versions"`
-		}{
-			ClusterVersion:  clusterVersion,
-			BundleData:      json.RawMessage(bundleData),
-			CurrentVersions: currentVersions,
-		}
-
-		// Convert the wrapped payload to JSON
-		finalPayload, err := json.MarshalIndent(webhookPayload, "", "  ")
-		if err != nil {
-			klog.Errorf("Error marshaling webhook payload: %v", err)
+		// Unmarshal bundle data to proper JSON structure
+		var bundleDataStruct any
+		if err := json.Unmarshal(bundleData, &bundleDataStruct); err != nil {
+			klog.Errorf("Error unmarshaling bundle data: %v", err)
 			return
 		}
 
+		// Wrap bundle data with cluster version and current versions
+		webhookPayload := struct {
+			ClusterVersion  string                        `json:"cluster_version"`
+			BundleData      any                           `json:"bundle_data"`
+			CurrentVersions map[string]CurrentVersionInfo `json:"current_versions"`
+		}{
+			ClusterVersion:  clusterVersion,
+			BundleData:      bundleDataStruct,
+			CurrentVersions: currentVersions,
+		}
+
 		// Use webhook function that handles both JSON and non-JSON responses
-		response, err := sendToWebhookWithResponse(finalPayload)
+		response, err := sendToWebhookWithResponse(webhookPayload)
 		if err != nil {
 			klog.Errorf("Error sending data to webhook with response: %v", err)
 			return
@@ -942,26 +942,26 @@ func processDryRun(args []string) {
 			}
 		}
 
-		// Wrap bundle data with cluster version and current versions (same as real mode)
-		webhookPayload := struct {
-			ClusterVersion  string                        `json:"cluster_version"`
-			BundleData      interface{}                   `json:"bundle_data"`
-			CurrentVersions map[string]CurrentVersionInfo `json:"current_versions"`
-		}{
-			ClusterVersion:  mockClusterVersion,
-			BundleData:      json.RawMessage(bundleData),
-			CurrentVersions: mockCurrentVersions,
-		}
-
-		// Convert the wrapped payload to JSON
-		finalPayload, err := json.MarshalIndent(webhookPayload, "", "  ")
-		if err != nil {
-			klog.Errorf("Error marshaling webhook payload: %v", err)
+		// Unmarshal bundle data to proper JSON structure
+		var bundleDataStruct any
+		if err := json.Unmarshal(bundleData, &bundleDataStruct); err != nil {
+			klog.Errorf("Error unmarshaling bundle data: %v", err)
 			return
 		}
 
+		// Wrap bundle data with cluster version and current versions (same as real mode)
+		webhookPayload := struct {
+			ClusterVersion  string                        `json:"cluster_version"`
+			BundleData      any                           `json:"bundle_data"`
+			CurrentVersions map[string]CurrentVersionInfo `json:"current_versions"`
+		}{
+			ClusterVersion:  mockClusterVersion,
+			BundleData:      bundleDataStruct,
+			CurrentVersions: mockCurrentVersions,
+		}
+
 		// Test webhook function that handles both JSON and non-JSON responses
-		response, err := sendToWebhookWithResponse(finalPayload)
+		response, err := sendToWebhookWithResponse(webhookPayload)
 		if err != nil {
 			klog.Errorf("Error sending data to webhook with response: %v", err)
 			return
