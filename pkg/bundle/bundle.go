@@ -37,8 +37,8 @@ type Source struct {
 
 // Versions is a list of version strings within the bundle spec file
 type Versions struct {
-	Start string `yaml:"start"`
-	End   string `yaml:"end"`
+	Current string `yaml:"current"`
+	Desired string `yaml:"desired"`
 }
 
 // BundleConfig is the top level key for the bundle spec file and contains slices of the Bundle struct
@@ -54,7 +54,7 @@ type K8sVersions struct {
 // Bundle maps the fields from a supplied bundle spec file
 type Bundle struct {
 	Name                  string      `yaml:"name"`                    // name of the helm release
-	Versions              Versions    `yaml:"versions"`                // start and stop versions of helm chart to evaluate
+	Versions              Versions    `yaml:"versions"`                // current and desired versions of helm chart to evaluate
 	Notes                 string      `yaml:"notes"`                   // strings of general notes
 	Source                Source      `yaml:"source"`                  // chart name and repository for helm release
 	Warnings              []string    `yaml:"warnings"`                // strings of warning messages

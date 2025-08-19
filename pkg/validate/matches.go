@@ -62,18 +62,18 @@ func (c *Config) getMatches() (matches, error) {
 					klog.Error(err)
 					continue
 				}
-				vStart, err := semver.Make(bundle.Versions.Start)
+				vCurrent, err := semver.Make(bundle.Versions.Current)
 				if err != nil {
 					klog.Error(err)
 					continue
 				}
-				vEnd, err := semver.Make(bundle.Versions.End)
+				vDesired, err := semver.Make(bundle.Versions.Desired)
 				if err != nil {
 					klog.Error(err)
 					continue
 				}
 
-				if v.GTE(vStart) && v.LT(vEnd) {
+				if v.GTE(vCurrent) && v.LT(vDesired) {
 					klog.V(3).Infof("Found match for chart %s in release %s", bundle.Name, release.Name)
 
 					finalMatches[fmt.Sprintf("%s/%s", release.Namespace, release.Name)] = match{
@@ -83,7 +83,7 @@ func (c *Config) getMatches() (matches, error) {
 							Name: release.Name,
 							Versions: OutputVersion{
 								Current: release.Chart.Metadata.Version,
-								Upgrade: bundle.Versions.End,
+								Upgrade: bundle.Versions.Desired,
 							},
 							Notes:    bundle.Notes,
 							Warnings: bundle.Warnings,

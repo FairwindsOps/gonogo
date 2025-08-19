@@ -748,7 +748,7 @@ func processAddonFromBundle(helmClient *helm.Helm, addon *bundle.Bundle, cluster
 		return ReleaseOutput{
 			ClusterVersion: clusterVersion,
 			ReleaseName:    addon.Name,
-			DesiredVersion: addon.Versions.End,
+			DesiredVersion: addon.Versions.Desired,
 			RepoURL:        addon.Source.Repository,
 			Error:          fmt.Sprintf("Helm release '%s' not found in the cluster", addon.Name),
 		}
@@ -761,14 +761,14 @@ func processAddonFromBundle(helmClient *helm.Helm, addon *bundle.Bundle, cluster
 		CurrentVersion: targetRelease.Chart.Metadata.Version,
 		AppVersion:     targetRelease.Chart.Metadata.AppVersion,
 		Status:         string(targetRelease.Info.Status),
-		DesiredVersion: addon.Versions.End,
+		DesiredVersion: addon.Versions.Desired,
 		RepoURL:        addon.Source.Repository,
-		Upgradeable:    isVersionUpgradeable(targetRelease.Chart.Metadata.Version, addon.Versions.End),
+		Upgradeable:    isVersionUpgradeable(targetRelease.Chart.Metadata.Version, addon.Versions.Desired),
 	}
 
 	// Perform OpenAI analysis if requested
 	if enableAnalysis {
-		analysis, err := performUpgradeAnalysis(targetRelease.Name, clusterVersion, targetRelease.Chart.Metadata.Version, addon.Versions.End, addon.Source.Repository)
+		analysis, err := performUpgradeAnalysis(targetRelease.Name, clusterVersion, targetRelease.Chart.Metadata.Version, addon.Versions.Desired, addon.Source.Repository)
 		if err != nil {
 			klog.Errorf("Error performing upgrade analysis for %s: %v", addon.Name, err)
 			// Continue without analysis rather than failing completely

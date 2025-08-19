@@ -1,8 +1,8 @@
 addons:
 - name: gng-nginx
   versions:
-    start: ""
-    end: ""
+    current: ""
+    desired: 4.13.0
   notes: ""
   source:
     chart: ingress-nginx
