@@ -1,18 +1,48 @@
 addons:
 - name: gng-nginx
   versions:
-    end: 4.13.0
+    start: ""
+    end: ""
+  notes: ""
   source:
     chart: ingress-nginx
     repository: https://kubernetes.github.io/ingress-nginx
-  resources:
-  - "networking.k8s.io/v1/ingresses"
-  values_schema: ""
-  warnings: []
-  opa_checks: 
-  - >
-    package Fairwinds
-    ingressesWithoutHttpPaths[actionItem] {
+  warnings:
+  - 'Prior to upgrading, you must delete the following Kubernetes jobs to avoid upgrade
+    and deployment failures:'
+  - ingress-nginx-admission-create
+  - ingress-nginx-admission-patch
+  compatible_k8s_versions:
+    min: ""
+    max: ""
+  necessary_api_versions: []
+  values_schema: |
+    {
+    "$schema": "http://json-schema.org/schema#",
+    "type": "object",
+    "properties": {
+      "image": {
+        "type": "object",
+        "required": [
+          "repository",
+          "pullPolicy"
+          ],
+          "properties": {
+            "repository": {
+              "type": "string",
+              "pattern": "^[a-z0-9]+"
+            },
+            "pullPolicy": {
+              "type": "string",
+              "pattern": "pizza"
+            }
+          }
+        }
+      }
+    }
+  opa_checks:
+  - |
+    package Fairwinds ingressesWithoutHttpPaths[actionItem] {
             input.kind == "Ingress"
             rule := input.spec.rules[_]
             not rule.http.paths
@@ -24,3 +54,5 @@ addons:
               "category": "Reliability"
             }
           }
+  resources:
+  - networking.k8s.io/v1/ingresses

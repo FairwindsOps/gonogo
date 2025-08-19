@@ -447,7 +447,7 @@ func sendToWebhookWithResponse(data any) (*WebhookJSONResponse, error) {
 
 	// Create HTTP client with timeout
 	client := &http.Client{
-		Timeout: 30 * time.Second,
+		Timeout: 300 * time.Second,
 	}
 
 	// Create POST request
