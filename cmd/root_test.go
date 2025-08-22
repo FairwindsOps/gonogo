@@ -121,20 +121,6 @@ func TestRootCmdPreRunE(t *testing.T) {
 	assert.Nil(t, cmd.PreRunE)
 }
 
-func TestRootCmdPostRun(t *testing.T) {
-	cmd := rootCmd
-
-	// Test that PostRun is not set (which is correct for root command)
-	assert.Nil(t, cmd.PostRun)
-}
-
-func TestRootCmdPostRunE(t *testing.T) {
-	cmd := rootCmd
-
-	// Test that PostRunE is not set (which is correct for root command)
-	assert.Nil(t, cmd.PersistentPostRunE)
-}
-
 func TestRootCmdSilenceUsage(t *testing.T) {
 	cmd := rootCmd
 

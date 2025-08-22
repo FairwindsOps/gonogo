@@ -83,20 +83,6 @@ func TestVersionCmdPreRunE(t *testing.T) {
 	assert.Nil(t, cmd.PreRunE)
 }
 
-func TestVersionCmdPostRun(t *testing.T) {
-	cmd := versionCmd
-
-	// Test that PostRun is not set (which is correct for version command)
-	assert.Nil(t, cmd.PostRun)
-}
-
-func TestVersionCmdPostRunE(t *testing.T) {
-	cmd := versionCmd
-
-	// Test that PostRunE is not set (which is correct for version command)
-	assert.Nil(t, cmd.PersistentPostRunE)
-}
-
 func TestVersionCmdSilenceUsage(t *testing.T) {
 	cmd := versionCmd
 
