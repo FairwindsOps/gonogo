@@ -1,0 +1,11 @@
+addons:
+- name: helm-release-pruner
+  versions:
+    start: 3.2.11
+    end: 3.2.12
+  source:
+    chart: ingress-nginx
+    repository: https://charts.fairwinds.com/stable
+  compatible_k8s_versions:
+    max: 1.27
+    min: 1.25

@@ -1,0 +1,12 @@
+addons:
+- name: aws-load-balancer-controller
+  versions:
+    start: 1.6.1
+    end: 1.6.2
+  notes: https://github.com/kubernetes-sigs/aws-load-balancer-controller/releases/tag/v2.6.2
+  source:
+    chart: aws-load-balancer-controller
+    repository: https://aws.github.io/eks-charts
+  compatible_k8s_versions:
+    max: 1.27
+    min: 1.19
