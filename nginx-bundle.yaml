@@ -1,0 +1,17 @@
+addons:
+- name: gng-nginx
+  versions:
+    current: ""
+    desired: 4.13.0
+  notes: ""
+  source:
+    chart: ingress-nginx
+    repository: https://kubernetes.github.io/ingress-nginx
+  warnings: []
+  compatible_k8s_versions:
+    min: ""
+    max: ""
+  necessary_api_versions: []
+  values_schema: ""
+  opa_checks: []
+  resources: []

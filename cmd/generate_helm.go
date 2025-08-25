@@ -47,6 +47,7 @@ var (
 	webhookURL           string
 	webhookAPIKey        string
 	dryRun               bool
+	bundleOutputPath     string
 )
 
 func init() {
@@ -61,6 +62,7 @@ func init() {
 	generateCmd.PersistentFlags().StringVar(&openaiAPIKey, "openai-api-key", "", "OpenAI API key for upgrade analysis (can also use OPENAI_API_KEY env var)")
 	generateCmd.PersistentFlags().StringVar(&openaiModel, "openai-model", "gpt-4o-mini", "OpenAI model to use for analysis")
 	generateCmd.PersistentFlags().BoolVar(&enableAnalysis, "analyze", false, "Enable OpenAI-powered upgrade analysis")
+	generateCmd.PersistentFlags().StringVarP(&bundleOutputPath, "bundle-output", "B", "", "output path for the generated bundle file (only for individual mode)")
 }
 
 var generateCmd = &cobra.Command{
@@ -70,6 +72,9 @@ var generateCmd = &cobra.Command{
 or for multiple addons specified in a bundle file.
 
 When using a bundle file, the command will process all addons in the bundle and use the versions.end field as the desired version.
+
+When using individual mode, you can optionally generate a bundle file using the --bundle-output flag.
+This will create a properly formatted bundle file with all necessary fields populated.
 
 Use the --webhook flag to send the release information to an n8n webhook URL instead of printing to stdout.
 Use the --webhook-api-key flag or GNG_API_KEY environment variable to provide authentication for the webhook.
@@ -592,6 +597,54 @@ func writeBundleToFile(bundleConfig *bundle.BundleConfig) error {
 	return nil
 }
 
+// generateBundleFile creates a new bundle file from individual mode parameters
+func generateBundleFile(releaseName, desiredVersion, repoURL, chartName string) error {
+	if bundleOutputPath == "" {
+		return nil // No bundle output requested
+	}
+
+	// Create a new bundle configuration
+	bundleConfig := &bundle.BundleConfig{
+		Addons: []*bundle.Bundle{
+			{
+				Name: releaseName,
+				Versions: bundle.Versions{
+					Current: "",
+					Desired: desiredVersion,
+				},
+				Notes: "",
+				Source: bundle.Source{
+					Chart:      chartName,
+					Repository: repoURL,
+				},
+				Warnings: []string{},
+				CompatibleK8sVersions: bundle.K8sVersions{
+					Min: "",
+					Max: "",
+				},
+				NecessaryAPIVersions: []string{},
+				ValuesSchema:         "",
+				OpaChecks:            []string{},
+				Resources:            []string{},
+			},
+		},
+	}
+
+	// Convert bundle config to YAML
+	yamlData, err := yaml.Marshal(bundleConfig)
+	if err != nil {
+		return fmt.Errorf("failed to marshal bundle config to YAML: %v", err)
+	}
+
+	// Write to the specified output path
+	if err := os.WriteFile(bundleOutputPath, yamlData, 0644); err != nil {
+		return fmt.Errorf("failed to write bundle file %s: %v", bundleOutputPath, err)
+	}
+
+	fmt.Printf("✅ Successfully generated bundle file: %s\n", bundleOutputPath)
+	return nil
+}
+
 // processBundleFile processes all addons from a bundle file
 func processBundleFile(helmClient *helm.Helm, clusterVersion string) {
 	// Send JSON converted from YAML to webhook if configured
@@ -839,7 +892,17 @@ func processSingleRelease(helmClient *helm.Helm, releaseName, clusterVersion, de
 			// No JSON response to process, just confirm the webhook call was successful
 			fmt.Printf("Successfully sent release data for '%s' to webhook: %s\n", output.ReleaseName, webhookURL)
 		}
+
+		// Generate bundle file if requested (even when using webhook)
+		if err := generateBundleFile(releaseName, desiredVersion, repoURL, targetRelease.Chart.Metadata.Name); err != nil {
+			klog.Errorf("Error generating bundle file: %v", err)
+		}
 		return
+	}
+
+	// Generate bundle file if requested
+	if err := generateBundleFile(releaseName, desiredVersion, repoURL, targetRelease.Chart.Metadata.Name); err != nil {
+		klog.Errorf("Error generating bundle file: %v", err)
 	}
 
 	// Output based on format
@@ -975,6 +1038,11 @@ func processDryRun(args []string) {
 		} else {
 			// No JSON response to process, just confirm the webhook call was successful
 			fmt.Printf("✅ Successfully sent mock release data with cluster version (%s) for '%s' to webhook: %s\n", mockClusterVersion, releaseName, webhookURL)
+		}
+
+		// Generate bundle file if requested in dry-run mode
+		if err := generateBundleFile(releaseName, desiredVersion, helmRepoURL, "test-chart"); err != nil {
+			klog.Errorf("Error generating bundle file in dry-run mode: %v", err)
 		}
 	}
 }

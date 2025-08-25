@@ -7,11 +7,7 @@ addons:
   source:
     chart: ingress-nginx
     repository: https://kubernetes.github.io/ingress-nginx
-  warnings:
-  - 'Prior to upgrading, you must delete the following Kubernetes jobs to avoid upgrade
-    and deployment failures:'
-  - ingress-nginx-admission-create
-  - ingress-nginx-admission-patch
+  warnings: []
   compatible_k8s_versions:
     min: ""
     max: ""

@@ -26,6 +26,8 @@ At this time, GoNoGo is currently in alpha. This means that we could change lite
 ## Documentation
 
 Check out the [documentation at docs.fairwinds.com](https://gonogo.docs.fairwinds.com)
+
+For more information about the generate command, see [Generate Command Documentation](docs/generate.md).
 ## Purpose
 A number factors can affect whether the upgrade of an addon (like cert-manager, nginx ingress, etc) will be successful or not. For example, some addon upgrades require a specific api to be available in the cluster, or a specific version of the Kubernetes cluster in general. Or perhaps an addon has deprecated a particular annotation and you want to make sure your upgraded addon doesn't include those deprecated annotations. Rather than having to manually assess each addon, GoNoGo enables you to create a specification (called a bundle spec) that you can populate with checks for the upgraded version, and run those against your cluster to get an upgrade confidence score.
 
@@ -42,6 +44,7 @@ Usage:
 
 Available Commands:
   check       Check for Helm releases that can be updated
+  generate    Generate bundle files and send data to webhooks
   completion  Generate the autocompletion script for the specified shell
   help        Help about any command
   version     Prints the current version of the tool.
@@ -59,6 +62,13 @@ Pass in a bundle spec with the addon definitions that you want to check
 ```
 
 gonogo check /path/to/bundle/bundle.yaml
+
+```
+
+Or generate a new bundle file for an individual addon
+```
+
+gonogo generate my-app --repo https://charts.example.com --desired-version 1.2.3 --bundle-output my-bundle.yaml
 
 ```
 
