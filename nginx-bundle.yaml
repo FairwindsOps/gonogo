@@ -7,7 +7,11 @@ addons:
   source:
     chart: ingress-nginx
     repository: https://kubernetes.github.io/ingress-nginx
-  warnings: []
+  warnings:
+  - Pods crash immediately on ARM64 platforms with "illegal instruction" errors.
+  - Nil pointer dereference crashes after node restarts causing pod instability.
+  - NGINX controller pods fail to start if `proxy-buffer-size` is set without explicitly
+    setting `proxy-busy-buffers-size`.
   compatible_k8s_versions:
     min: ""
     max: ""

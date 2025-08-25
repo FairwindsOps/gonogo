@@ -582,6 +582,51 @@ func mergeWarningsIntoBundle(response *WebhookJSONResponse) error {
 	return nil
 }
 
+// mergeWarningsIntoBundleFile merges the warnings from webhook response into a specified bundle file
+func mergeWarningsIntoBundleFile(response *WebhookJSONResponse, filePath string) error {
+	// Read the bundle file
+	bundleConfig, err := bundle.ReadConfig([]string{filePath})
+	if err != nil {
+		return fmt.Errorf("failed to read bundle file for merging: %v", err)
+	}
+
+	// Create a map of addon names to warnings for quick lookup
+	warningsMap := make(map[string][]string)
+	for _, addon := range response.Addons {
+		warningsMap[addon.Name] = addon.Warnings
+	}
+
+	// Merge warnings into the bundle addons
+	for _, addon := range bundleConfig.Addons {
+		if warnings, exists := warningsMap[addon.Name]; exists {
+			// Append new warnings to existing ones (avoid duplicates)
+			existingWarnings := make(map[string]bool)
+			for _, warning := range addon.Warnings {
+				existingWarnings[warning] = true
+			}
+
+			for _, warning := range warnings {
+				if !existingWarnings[warning] {
+					addon.Warnings = append(addon.Warnings, warning)
+				}
+			}
+		}
+	}
+
+	// Convert bundle config to YAML
+	yamlData, err := yaml.Marshal(bundleConfig)
+	if err != nil {
+		return fmt.Errorf("failed to marshal bundle config to YAML: %v", err)
+	}
+
+	// Write to the specified file path
+	if err := os.WriteFile(filePath, yamlData, 0644); err != nil {
+		return fmt.Errorf("failed to write bundle file %s: %v", filePath, err)
+	}
+
+	return nil
+}
+
 // writeBundleToFile writes the bundle configuration back to the file
 func writeBundleToFile(bundleConfig *bundle.BundleConfig) error {
 	// Convert bundle config to YAML
@@ -598,7 +643,7 @@ func writeBundleToFile(bundleConfig *bundle.BundleConfig) error {
 }
 
 // generateBundleFile creates a new bundle file from individual mode parameters
-func generateBundleFile(releaseName, desiredVersion, repoURL, chartName string) error {
+func generateBundleFile(releaseName, desiredVersion, repoURL, chartName, currentVersion string) error {
 	if bundleOutputPath == "" {
 		return nil // No bundle output requested
 	}
@@ -609,7 +654,7 @@ func generateBundleFile(releaseName, desiredVersion, repoURL, chartName string) 
 			{
 				Name: releaseName,
 				Versions: bundle.Versions{
-					Current: "",
+					Current: currentVersion,
 					Desired: desiredVersion,
 				},
 				Notes: "",
@@ -656,23 +701,27 @@ func processBundleFile(helmClient *helm.Helm, clusterVersion string) {
 			return
 		}
 
-		// Convert YAML to JSON
-		bundleData, err := convertYAMLToJSON(string(yamlContent))
-		if err != nil {
-			klog.Errorf("Error converting YAML to JSON: %v", err)
-			return
-		}
-
-		// Get current versions from Helm releases
+		// Get current versions from Helm releases and update bundle config
 		currentVersions := make(map[string]CurrentVersionInfo)
-		if helmClient != nil {
-			bundleConfig, err := bundle.ReadConfig([]string{bundleFilePath})
+		bundleConfig, err := bundle.ReadConfig([]string{bundleFilePath})
+		var jsonBundleData []byte
+
+		if err != nil {
+			klog.Errorf("Error reading bundle config for current versions: %v", err)
+			// Fallback to original YAML conversion
+			jsonBundleData, err = convertYAMLToJSON(string(yamlContent))
 			if err != nil {
-				klog.Errorf("Error reading bundle config for current versions: %v", err)
-			} else {
+				klog.Errorf("Error converting YAML to JSON: %v", err)
+				return
+			}
+		} else {
+			// Update bundle config with current versions from Helm releases
+			if helmClient != nil {
 				for _, addon := range bundleConfig.Addons {
 					for _, release := range helmClient.Releases {
 						if release.Name == addon.Name {
+							// Update the current version in the bundle config
+							addon.Versions.Current = release.Chart.Metadata.Version
 							currentVersions[addon.Name] = CurrentVersionInfo{
 								CurrentVersion: release.Chart.Metadata.Version,
 								AppVersion:     release.Chart.Metadata.AppVersion,
@@ -684,11 +733,24 @@ func processBundleFile(helmClient *helm.Helm, clusterVersion string) {
 					}
 				}
 			}
+
+			// Convert updated bundle config to JSON
+			bundleData, err := yaml.Marshal(bundleConfig)
+			if err != nil {
+				klog.Errorf("Error marshaling updated bundle config: %v", err)
+				return
+			}
+
+			jsonBundleData, err = convertYAMLToJSON(string(bundleData))
+			if err != nil {
+				klog.Errorf("Error converting updated YAML to JSON: %v", err)
+				return
+			}
 		}
 
 		// Unmarshal bundle data to proper JSON structure
 		var bundleDataStruct any
-		if err := json.Unmarshal(bundleData, &bundleDataStruct); err != nil {
+		if err := json.Unmarshal(jsonBundleData, &bundleDataStruct); err != nil {
 			klog.Errorf("Error unmarshaling bundle data: %v", err)
 			return
 		}
@@ -875,8 +937,66 @@ func processSingleRelease(helmClient *helm.Helm, releaseName, clusterVersion, de
 
 	// Send to webhook if configured
 	if webhookURL != "" {
+		// Create bundle-like payload structure to match bundle mode format
+		bundleData := map[string]interface{}{
+			"addons": []map[string]interface{}{
+				{
+					"name": releaseName,
+					"versions": map[string]interface{}{
+						"current": targetRelease.Chart.Metadata.Version,
+						"desired": desiredVersion,
+					},
+					"notes": "",
+					"source": map[string]interface{}{
+						"chart":      targetRelease.Chart.Metadata.Name,
+						"repository": repoURL,
+					},
+					"warnings": []string{},
+					"compatible_k8s_versions": map[string]interface{}{
+						"min": "",
+						"max": "",
+					},
+					"necessary_api_versions": []string{},
+					"values_schema":          "",
+					"opa_checks":             []string{},
+					"resources":              []string{},
+				},
+			},
+		}
+
+		// Create current versions info
+		currentVersions := map[string]CurrentVersionInfo{
+			releaseName: {
+				CurrentVersion: targetRelease.Chart.Metadata.Version,
+				AppVersion:     targetRelease.Chart.Metadata.AppVersion,
+				Namespace:      targetRelease.Namespace,
+				Status:         string(targetRelease.Info.Status),
+			},
+		}
+
+		// Create webhook payload in bundle mode format
+		webhookPayload := struct {
+			ClusterVersion  string                        `json:"cluster_version"`
+			BundleData      map[string]interface{}        `json:"bundle_data"`
+			CurrentVersions map[string]CurrentVersionInfo `json:"current_versions"`
+		}{
+			ClusterVersion:  clusterVersion,
+			BundleData:      bundleData,
+			CurrentVersions: currentVersions,
+		}
+
+		// Generate bundle file first if requested (so we can merge warnings into it)
+		bundleGenerated := false
+		if bundleOutputPath != "" {
+			if err := generateBundleFile(releaseName, desiredVersion, repoURL, targetRelease.Chart.Metadata.Name, targetRelease.Chart.Metadata.Version); err != nil {
+				klog.Errorf("Error generating bundle file: %v", err)
+			} else {
+				bundleGenerated = true
+			}
+		}
+
 		// Use webhook function that handles both JSON and non-JSON responses
-		response, err := sendToWebhookWithResponse(output)
+		response, err := sendToWebhookWithResponse(webhookPayload)
 		if err != nil {
 			klog.Errorf("Error sending data to webhook with response: %v", err)
 			return
@@ -884,24 +1004,47 @@ func processSingleRelease(helmClient *helm.Helm, releaseName, clusterVersion, de
 
 		// Process the JSON response if received
 		if response != nil {
-			if err := processWebhookJSONResponse(response); err != nil {
-				klog.Errorf("Error processing webhook JSON response: %v", err)
-				return
+			// For individual mode, we need custom processing to handle bundle file merging
+			if len(response.Addons) == 0 {
+				fmt.Println("✅ No addons with warnings received from webhook")
+			} else {
+				klog.Infof("Received %d addons with warnings from webhook", len(response.Addons))
+
+				// If we generated a bundle file, merge warnings into it
+				if bundleGenerated {
+					if err := mergeWarningsIntoBundleFile(response, bundleOutputPath); err != nil {
+						klog.Errorf("Failed to merge warnings into bundle file: %v", err)
+						// Still print warnings to stdout as fallback
+						fmt.Printf("⚠️  Received warnings for %d addons from webhook:\n", len(response.Addons))
+						for _, addon := range response.Addons {
+							fmt.Printf("\n📦 Addon: %s\n", addon.Name)
+							for i, warning := range addon.Warnings {
+								fmt.Printf("  %d. %s\n", i+1, warning)
+							}
+						}
+					} else {
+						fmt.Printf("✅ Successfully merged warnings for %d addons into bundle file: %s\n", len(response.Addons), bundleOutputPath)
+					}
+				} else {
+					// No bundle file generated, just print to stdout
+					fmt.Printf("⚠️  Received warnings for %d addons from webhook:\n", len(response.Addons))
+					for _, addon := range response.Addons {
+						fmt.Printf("\n📦 Addon: %s\n", addon.Name)
+						for i, warning := range addon.Warnings {
+							fmt.Printf("  %d. %s\n", i+1, warning)
+						}
+					}
+				}
 			}
 		} else {
 			// No JSON response to process, just confirm the webhook call was successful
-			fmt.Printf("Successfully sent release data for '%s' to webhook: %s\n", output.ReleaseName, webhookURL)
-		}
-
-		// Generate bundle file if requested (even when using webhook)
-		if err := generateBundleFile(releaseName, desiredVersion, repoURL, targetRelease.Chart.Metadata.Name); err != nil {
-			klog.Errorf("Error generating bundle file: %v", err)
+			fmt.Printf("Successfully sent release data for '%s' to webhook: %s\n", releaseName, webhookURL)
 		}
 		return
 	}
 
 	// Generate bundle file if requested
-	if err := generateBundleFile(releaseName, desiredVersion, repoURL, targetRelease.Chart.Metadata.Name); err != nil {
+	if err := generateBundleFile(releaseName, desiredVersion, repoURL, targetRelease.Chart.Metadata.Name, targetRelease.Chart.Metadata.Version); err != nil {
 		klog.Errorf("Error generating bundle file: %v", err)
 	}
 
@@ -1011,38 +1154,107 @@ func processDryRun(args []string) {
 			releaseName = args[0]
 		}
 
-		mockOutput := ReleaseOutput{
-			ClusterVersion: mockClusterVersion,
-			ReleaseName:    releaseName,
-			Namespace:      releaseName + "-system",
-			CurrentVersion: "1.0.0",
-			AppVersion:     "1.0.0",
-			Status:         "deployed",
-			DesiredVersion: desiredVersion,
-			RepoURL:        helmRepoURL,
-			Upgradeable:    true,
+		// Create bundle-like payload structure to match bundle mode format (dry-run)
+		mockBundleData := map[string]interface{}{
+			"addons": []map[string]interface{}{
+				{
+					"name": releaseName,
+					"versions": map[string]interface{}{
+						"current": "1.0.0",
+						"desired": desiredVersion,
+					},
+					"notes": "",
+					"source": map[string]interface{}{
+						"chart":      "test-chart",
+						"repository": helmRepoURL,
+					},
+					"warnings": []string{},
+					"compatible_k8s_versions": map[string]interface{}{
+						"min": "",
+						"max": "",
+					},
+					"necessary_api_versions": []string{},
+					"values_schema":          "",
+					"opa_checks":             []string{},
+					"resources":              []string{},
+				},
+			},
+		}
+
+		// Create mock current versions info
+		mockCurrentVersions := map[string]CurrentVersionInfo{
+			releaseName: {
+				CurrentVersion: "1.0.0",
+				AppVersion:     "1.0.0",
+				Namespace:      releaseName + "-system",
+				Status:         "deployed",
+			},
+		}
+
+		// Create mock webhook payload in bundle mode format
+		mockWebhookPayload := struct {
+			ClusterVersion  string                        `json:"cluster_version"`
+			BundleData      map[string]interface{}        `json:"bundle_data"`
+			CurrentVersions map[string]CurrentVersionInfo `json:"current_versions"`
+		}{
+			ClusterVersion:  mockClusterVersion,
+			BundleData:      mockBundleData,
+			CurrentVersions: mockCurrentVersions,
+		}
+
+		// Generate bundle file first if requested in dry-run mode (so we can merge warnings into it)
+		bundleGenerated := false
+		if bundleOutputPath != "" {
+			if err := generateBundleFile(releaseName, desiredVersion, helmRepoURL, "test-chart", "1.0.0"); err != nil {
+				klog.Errorf("Error generating bundle file in dry-run mode: %v", err)
+			} else {
+				bundleGenerated = true
+			}
 		}
 
 		// Test webhook function that handles both JSON and non-JSON responses
-		response, err := sendToWebhookWithResponse(mockOutput)
+		response, err := sendToWebhookWithResponse(mockWebhookPayload)
 		if err != nil {
 			klog.Errorf("Error sending data to webhook with response: %v", err)
 			return
 		}
 		// Process the JSON response if received
 		if response != nil {
-			if err := processWebhookJSONResponse(response); err != nil {
-				klog.Errorf("Error processing webhook JSON response: %v", err)
-				return
+			// For individual mode dry-run, we need custom processing to handle bundle file merging
+			if len(response.Addons) == 0 {
+				fmt.Println("✅ No addons with warnings received from webhook (dry-run)")
+			} else {
+				klog.Infof("Received %d addons with warnings from webhook (dry-run)", len(response.Addons))
+
+				// If we generated a bundle file, merge warnings into it
+				if bundleGenerated {
+					if err := mergeWarningsIntoBundleFile(response, bundleOutputPath); err != nil {
+						klog.Errorf("Failed to merge warnings into bundle file (dry-run): %v", err)
+						// Still print warnings to stdout as fallback
+						fmt.Printf("⚠️  Received warnings for %d addons from webhook (dry-run):\n", len(response.Addons))
+						for _, addon := range response.Addons {
+							fmt.Printf("\n📦 Addon: %s\n", addon.Name)
+							for i, warning := range addon.Warnings {
+								fmt.Printf("  %d. %s\n", i+1, warning)
+							}
+						}
+					} else {
+						fmt.Printf("✅ Successfully merged warnings for %d addons into bundle file: %s (dry-run)\n", len(response.Addons), bundleOutputPath)
+					}
+				} else {
+					// No bundle file generated, just print to stdout
+					fmt.Printf("⚠️  Received warnings for %d addons from webhook (dry-run):\n", len(response.Addons))
+					for _, addon := range response.Addons {
+						fmt.Printf("\n📦 Addon: %s\n", addon.Name)
+						for i, warning := range addon.Warnings {
+							fmt.Printf("  %d. %s\n", i+1, warning)
+						}
+					}
+				}
 			}
 		} else {
 			// No JSON response to process, just confirm the webhook call was successful
 			fmt.Printf("✅ Successfully sent mock release data with cluster version (%s) for '%s' to webhook: %s\n", mockClusterVersion, releaseName, webhookURL)
-		}
-
-		// Generate bundle file if requested in dry-run mode
-		if err := generateBundleFile(releaseName, desiredVersion, helmRepoURL, "test-chart"); err != nil {
-			klog.Errorf("Error generating bundle file in dry-run mode: %v", err)
 		}
 	}
 }
