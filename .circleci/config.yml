@@ -32,11 +32,11 @@ jobs:
     working_directory: /go/src/github.com/fairwindsops/gonogo
     resource_class: large
     docker:
-      - image: goreleaser/goreleaser:v1.18.2
+      - image: goreleaser/goreleaser:v2.15.4
     steps:
       - checkout
       - setup_remote_docker
-      - run: goreleaser --snapshot --skip-sign
+      - run: goreleaser release --snapshot --clean --skip=sign
       - store_artifacts:
           path: dist
           destination: snapshot
@@ -45,7 +45,7 @@ jobs:
     resource_class: large
     shell: /bin/bash
     docker:
-      - image: goreleaser/goreleaser:v1.18.2
+      - image: goreleaser/goreleaser:v2.15.4
         environment:
           GO111MODULE: "on"
     steps:
@@ -61,7 +61,7 @@ jobs:
           command: |
             docker login -u _json_key -p "$(echo $GCP_ARTIFACTREADWRITE_JSON_KEY | base64 -d)" us-docker.pkg.dev
       - run: echo 'export GORELEASER_CURRENT_TAG="${CIRCLE_TAG}"' >> $BASH_ENV
-      - run: goreleaser
+      - run: goreleaser release --clean
 
 workflows:
   version: 2
