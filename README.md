@@ -16,7 +16,6 @@
   </a>
 </div>
 
-
 GoNoGo is a utility to help users determine upgrade confidence around Kubernetes cluster addons.
 
 ## Alpha Software
@@ -62,7 +61,29 @@ gonogo check /path/to/bundle/bundle.yaml
 
 ```
 
+## Notice: Immutable and signed images (v0.4.0+)
 
+Starting with **v0.4.0**:
+
+* Images are now **signed**
+* Tags are **immutable**
+* No more floating tags:
+
+  * `v0`
+  * `v0.3`
+  * `latest`
+
+Use full version tags:
+
+```
+us-docker.pkg.dev/fairwinds-ops/oss/gonogo:v<major>.<minor>.<patch>
+```
+
+Or pin by digest:
+
+```
+us-docker.pkg.dev/fairwinds-ops/oss/gonogo@sha256:<digest>
+```
 
 <!-- Begin boilerplate -->
 ## Join the Fairwinds Open Source Community
