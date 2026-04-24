@@ -61,23 +61,9 @@ gonogo check /path/to/bundle/bundle.yaml
 
 ```
 
-## Notice: Registry Migration and Immutable Images (v0.3.1 → v0.4.0)
+## Notice: Immutable and signed images (v0.4.0+)
 
 Starting with **v0.4.0**:
-
-- Images moved to `us-docker.pkg.dev/fairwinds-ops/oss/gonogo`
-- `quay.io/fairwinds/gonogo` is deprecated
-
-### Required action
-
-```diff
-- quay.io/fairwinds/gonogo:<tag>
-+ us-docker.pkg.dev/fairwinds-ops/oss/gonogo:<tag>
-```
-
----
-
-## Immutable and signed images
 
 * Images are now **signed**
 * Tags are **immutable**
