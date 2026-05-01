@@ -15,3 +15,23 @@ addons:
   values_schema: ""
   resources:
   opa_checks:
+- name: metrics-server
+  versions:
+    start: 3.13.0
+    end: 3.13.1
+  notes: https://github.com/kubernetes-sigs/metrics-server/releases/tag/v0.8.1
+  source:
+    chart: metrics-server
+    repository: https://kubernetes-sigs.github.io/metrics-server
+  warnings:
+  - "Metrics Server 0.8.x supports Kubernetes 1.31 and newer. Confirm the cluster version before upgrading."
+  - "Metrics Server requires the kube-apiserver aggregation layer, kubelet webhook authentication/authorization, and reachable kubelet metrics endpoints."
+  - "Chart 3.13.1 was not present in the upstream metrics-server Helm repository when this bundle was created. Verify target chart availability before upgrading."
+  compatible_k8s_versions:
+    min: 1.31
+  necessary_api_versions:
+  - apiregistration.k8s.io/v1
+  - metrics.k8s.io/v1beta1
+  values_schema: ""
+  resources:
+  opa_checks:
