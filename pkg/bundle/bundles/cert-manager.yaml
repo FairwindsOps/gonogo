@@ -1,0 +1,20 @@
+addons:
+- name: cert-manager
+  versions:
+    start: 1.13.0
+    end: 1.14.0
+  notes: https://cert-manager.io/docs/releases/upgrading/upgrading-1.13-1.14/
+  source:
+    chart: cert-manager
+    repository: https://charts.jetstack.io
+  warnings:
+  - "cert-manager v1.14.0 has known issues; upstream recommends installing the latest v1.14 patch release instead of v1.14.0."
+  - "The startupapicheck job uses a new startupapicheck OCI image instead of the ctl image. Ensure restricted or mirrored registries include the new image before upgrading."
+  - "KeyUsage and BasicConstraints extensions are encoded as critical in CertificateRequest CSR blobs in cert-manager 1.14. Verify integrations that inspect or sign CertificateRequests can handle this."
+  - "If ExperimentalGatewayAPISupport is enabled, cert-manager 1.14 uses Gateway API v1. Ensure Gateway API v1 CRDs are installed."
+  compatible_k8s_versions:
+    min: 1.24
+    max: 1.31
+  values_schema: ""
+  resources:
+  opa_checks:
