@@ -1,0 +1,21 @@
+addons:
+- name: gloo-gateway
+  versions:
+    start: 1.20.8
+    end: 1.21.4
+  notes: https://docs.solo.io/gateway/1.21.x/operations/upgrade/
+  source:
+    chart: gloo
+    repository: https://storage.googleapis.com/solo-public-helm/charts
+  warnings:
+  - "Before upgrading across minor versions, make sure the current 1.20.x installation is on the latest patch version and upgrade minor versions incrementally."
+  - "Review the Gloo Gateway 1.21 upgrade notes and apply the target-version Gloo CRDs before running helm upgrade."
+  - "Gloo Gateway 1.21 upgrades Envoy from 1.35.x to 1.36.x; review Envoy breaking changes for extProc fail-open/full-duplex combinations, tracing route refresh behavior, HTTP/2 default limits, and HTTP/1 CONNECT request formatting."
+  - "The XSLT transformation feature in Gloo Gateway Enterprise is deprecated in 1.21.0 and planned for removal in 1.22.0."
+  - "Make sure custom Helm values are included during the upgrade so previous settings are not overwritten."
+  - "For production environments that cannot tolerate downtime, review the canary upgrade guidance instead of using a basic helm upgrade."
+  compatible_k8s_versions:
+    min: 1.29
+    max: 1.34
+  necessary_api_versions:
+  - gateway.networking.k8s.io/v1
