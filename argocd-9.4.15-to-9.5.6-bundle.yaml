@@ -1,0 +1,50 @@
+addons:
+- name: argo-cd
+  versions:
+    start: 9.4.15
+    end: 9.5.6
+  notes: |
+    Upgrade from ArgoCD Helm chart 9.4.15 to 9.5.6
+    AppVersion: v3.3.4 -> v3.3.8
+    
+    Major changes between versions:
+    - VPA updateMode now properly quoted to prevent YAML boolean coercion
+    - Added VPA support for all ArgoCD components (application-controller, repo-server, server, dex, redis, applicationset, commit-server, notifications)
+    - Added HTTPRoute support for ApplicationSet webhook
+    - Fixed PrometheusRule annotation template syntax for ArgoAppNotSynced
+    - Added repoServer.copyutil.extraArgs with default '--update=none' to optimize git operations
+    - Extension installer image updated from v0.0.9 to v1.0.0
+    - ArgoCD application version bumped from v3.3.4 to v3.3.8 (includes 4 patch releases)
+    - Chart source URL order changed (parent repo now first for renovate changelog support)
+  source:
+    chart: argo-cd
+    repository: https://argoproj.github.io/argo-helm
+  warnings:
+  - "This upgrade includes 4 ArgoCD application patch releases (v3.3.4 -> v3.3.8). Review the ArgoCD release notes for any security or bug fixes."
+  - "VPA (VerticalPodAutoscaler) support has been added for all components. If you plan to enable VPA, ensure the VPA CRDs are installed in your cluster."
+  - "HTTPRoute support has been added for ApplicationSet webhook. If you use Gateway API, verify your Gateway configuration is compatible."
+  - "The extension installer image has been updated from v0.0.9 to v1.0.0. If you use ArgoCD extensions, test compatibility."
+  - "The repoServer.copyutil.extraArgs default now includes '--update=none' which changes git copy behavior. Review if you have custom git workflows."
+  compatible_k8s_versions:
+    min: 1.25
+  necessary_api_versions:
+  - apps/v1
+  - v1
+  - networking.k8s.io/v1
+  resources:
+  - "v1/configmaps"
+  - "apps/v1/deployments"
+  - "apps/v1/statefulsets"
+  opa_checks:
+  - >
+    package Fairwinds
+    vpaWithoutCRD[actionItem] {
+            input.kind == "VerticalPodAutoscaler"
+            actionItem := {
+              "title": "VPA Resource Without CRD",
+              "description": "VerticalPodAutoscaler resources are defined but VPA CRDs may not be installed in the cluster",
+              "severity": 0.3,
+              "remediation": "Ensure VerticalPodAutoscaler CRDs are installed before enabling VPA features. Install from: https://github.com/kubernetes/autoscaler/tree/master/vertical-pod-autoscaler",
+              "category": "Reliability"
+            }
+          }
