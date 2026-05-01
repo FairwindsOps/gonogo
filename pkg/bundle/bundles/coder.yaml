@@ -1,0 +1,18 @@
+addons:
+- name: coder
+  versions:
+    start: 2.24.1
+    end: 2.25.0
+  notes: https://github.com/coder/coder/releases/tag/v2.25.0
+  source:
+    chart: coder
+    repository: https://helm.coder.com/v2
+  warnings:
+  - "Coder 2.25.0 routes workspace connection events to the Connection Log instead of the Audit Log. Premium deployments should review Connection Log access before upgrading."
+  - "Coder 2.25.0 deletes connection events older than 90 days from the Audit Log. Back up or query legacy audit data before upgrading if it must be retained."
+  - "The coder create CLI command now applies or prompts for template presets. Review non-interactive automation for templates with presets before upgrading."
+  - "If mounted TLS certificate secrets have permission issues after upgrade, configure coder.podSecurityContext.fsGroup as recommended by the Coder chart."
+  compatible_k8s_versions:
+    min: 1.19.0
+  resources:
+  opa_checks:
