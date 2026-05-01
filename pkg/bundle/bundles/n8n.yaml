@@ -1,0 +1,117 @@
+addons:
+- name: n8n
+  versions:
+    start: 1.16.9
+    end: 1.16.37
+  notes: https://github.com/community-charts/helm-charts/releases/tag/n8n-1.16.37 and https://docs.n8n.io/2-0-breaking-changes/
+  source:
+    chart: n8n
+    repository: https://community-charts.github.io/helm-charts
+  warnings:
+  - "The n8n chart upgrade from 1.16.9 to 1.16.37 upgrades the application from n8n 1.123.4 to 2.17.3. Review the n8n v2.0 breaking changes before upgrading."
+  - "n8n v2 removes MySQL and MariaDB storage backend support. Migrate n8n storage to PostgreSQL before upgrading if DB_TYPE is mysql or mariadb."
+  - "n8n v2 enables task runners by default. External task runner mode requires the separate n8nio/runners image, and N8N_RUNNERS_ENABLED is no longer a supported control."
+  - "n8n v2 blocks environment access from Code nodes by default. Review workflows that depend on process.env or set N8N_BLOCK_ENV_ACCESS_IN_NODE intentionally."
+  - "Chart 1.16.37 requires Kubernetes 1.23.0 or newer."
+  compatible_k8s_versions:
+    min: 1.23.0
+  resources:
+  - "apps/v1/deployments"
+  - "apps/v1/statefulsets"
+  opa_checks:
+  - >
+    package Fairwinds
+    n8nDeprecatedDatabaseBackend[actionItem] {
+            input.kind == workload_kind
+            workload_kind == "Deployment"
+            container := input.spec.template.spec.containers[_]
+            env := container.env[_]
+            env.name == "DB_TYPE"
+            lower(env.value) == backend
+            backend == "mysql"
+            actionItem := {
+              "title": "Unsupported n8n database backend",
+              "description": "n8n v2 no longer supports MySQL or MariaDB as storage backends.",
+              "severity": 0.1,
+              "remediation": "Migrate n8n to PostgreSQL before upgrading to chart 1.16.37.",
+              "category": "Reliability"
+            }
+          }
+    n8nDeprecatedDatabaseBackend[actionItem] {
+            input.kind == workload_kind
+            workload_kind == "Deployment"
+            container := input.spec.template.spec.containers[_]
+            env := container.env[_]
+            env.name == "DB_TYPE"
+            lower(env.value) == backend
+            backend == "mariadb"
+            actionItem := {
+              "title": "Unsupported n8n database backend",
+              "description": "n8n v2 no longer supports MySQL or MariaDB as storage backends.",
+              "severity": 0.1,
+              "remediation": "Migrate n8n to PostgreSQL before upgrading to chart 1.16.37.",
+              "category": "Reliability"
+            }
+          }
+    n8nDeprecatedDatabaseBackend[actionItem] {
+            input.kind == workload_kind
+            workload_kind == "StatefulSet"
+            container := input.spec.template.spec.containers[_]
+            env := container.env[_]
+            env.name == "DB_TYPE"
+            lower(env.value) == backend
+            backend == "mysql"
+            actionItem := {
+              "title": "Unsupported n8n database backend",
+              "description": "n8n v2 no longer supports MySQL or MariaDB as storage backends.",
+              "severity": 0.1,
+              "remediation": "Migrate n8n to PostgreSQL before upgrading to chart 1.16.37.",
+              "category": "Reliability"
+            }
+          }
+    n8nDeprecatedDatabaseBackend[actionItem] {
+            input.kind == workload_kind
+            workload_kind == "StatefulSet"
+            container := input.spec.template.spec.containers[_]
+            env := container.env[_]
+            env.name == "DB_TYPE"
+            lower(env.value) == backend
+            backend == "mariadb"
+            actionItem := {
+              "title": "Unsupported n8n database backend",
+              "description": "n8n v2 no longer supports MySQL or MariaDB as storage backends.",
+              "severity": 0.1,
+              "remediation": "Migrate n8n to PostgreSQL before upgrading to chart 1.16.37.",
+              "category": "Reliability"
+            }
+          }
+  - >
+    package Fairwinds
+    n8nDeprecatedRunnerEnabledEnv[actionItem] {
+            input.kind == workload_kind
+            workload_kind == "Deployment"
+            container := input.spec.template.spec.containers[_]
+            env := container.env[_]
+            env.name == "N8N_RUNNERS_ENABLED"
+            actionItem := {
+              "title": "Deprecated n8n task runner setting",
+              "description": "N8N_RUNNERS_ENABLED is no longer a supported control in n8n v2.",
+              "severity": 0.1,
+              "remediation": "Remove N8N_RUNNERS_ENABLED and configure N8N_RUNNERS_MODE. Use the n8nio/runners image for external runner mode.",
+              "category": "Reliability"
+            }
+          }
+    n8nDeprecatedRunnerEnabledEnv[actionItem] {
+            input.kind == workload_kind
+            workload_kind == "StatefulSet"
+            container := input.spec.template.spec.containers[_]
+            env := container.env[_]
+            env.name == "N8N_RUNNERS_ENABLED"
+            actionItem := {
+              "title": "Deprecated n8n task runner setting",
+              "description": "N8N_RUNNERS_ENABLED is no longer a supported control in n8n v2.",
+              "severity": 0.1,
+              "remediation": "Remove N8N_RUNNERS_ENABLED and configure N8N_RUNNERS_MODE. Use the n8nio/runners image for external runner mode.",
+              "category": "Reliability"
+            }
+          }
