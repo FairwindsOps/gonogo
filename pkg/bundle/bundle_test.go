@@ -58,7 +58,7 @@ func TestReadConfig(t *testing.T) {
 		{
 			name:    "file does not exist",
 			file:    []string{"farglebargle"},
-			want: nil,
+			want:    nil,
 			wantErr: true,
 		},
 	}
@@ -73,4 +73,26 @@ func TestReadConfig(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestReadConfigDefaultBundles(t *testing.T) {
+	got, err := ReadConfig(nil)
+	assert.NoError(t, err)
+
+	var found bool
+	for _, addon := range got.Addons {
+		if addon.Name != "argocd" {
+			continue
+		}
+
+		found = true
+		assert.Equal(t, "9.4.15", addon.Versions.Start)
+		assert.Equal(t, "9.5.6", addon.Versions.End)
+		assert.Equal(t, "argo-cd", addon.Source.Chart)
+		assert.Equal(t, "https://argoproj.github.io/argo-helm", addon.Source.Repository)
+		assert.Equal(t, "1.25", addon.CompatibleK8sVersions.Min)
+		assert.Contains(t, addon.NecessaryAPIVersions, "apiextensions.k8s.io/v1")
+	}
+
+	assert.True(t, found, "expected embedded argocd bundle")
 }
