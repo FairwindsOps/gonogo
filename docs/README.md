@@ -64,6 +64,17 @@ gonogo check /path/to/bundle/bundle.yaml
 
 ```
 
+## Curated Bundles
+
+GoNoGo includes several curated bundles for popular Kubernetes addons. You can use these by running `gonogo check` without specifying a bundle file:
+
+- **aws-load-balancer-controller**: v1.4.5 → v1.5.4
+- **gloo-gateway**: v1.20.8 → v1.21.2
+- **metrics-server**: v3.5.0 → v3.9.1
+
+For detailed information about a specific bundle, see:
+- [Gloo Gateway Bundle Documentation](gloo-gateway-bundle.md)
+
 
 
 <!-- Begin boilerplate -->
