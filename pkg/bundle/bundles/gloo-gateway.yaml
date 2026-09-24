@@ -1,0 +1,129 @@
+addons:
+- name: gloo-gateway
+  versions:
+    start: 1.20.8
+    end: 1.21.2
+  notes: |
+    Gloo Gateway upgrade from 1.20.8 to 1.21.x includes significant changes:
+    - Envoy upgraded from 1.35.x to 1.36.x with breaking changes
+    - HTTP/2 default value changes (concurrent streams, window sizes)
+    - HTTP/1 CONNECT request format changes
+    - XSLT transformation deprecated (Enterprise)
+    - Kubernetes Gateway API updated to v1.4.1
+    - Dynamic Forward Proxy now supports HTTPS targets via HTTP CONNECT tunneling
+    For detailed information see: https://docs.solo.io/gloo-edge/main/operations/upgrading/faq/
+  source:
+    chart: gloo-gateway
+    repository: https://storage.googleapis.com/solo-public-helm
+  warnings:
+  - "Envoy version upgraded from 1.35.x to 1.36.x. This includes breaking changes to ExtProc, HTTP/2 defaults, and HTTP/1 CONNECT behavior."
+  - "HTTP/2 default values changed: max concurrent streams (2147483647 -> 1024), initial stream window size (256MiB -> 16MiB), initial connection window size (256MiB -> 24MiB)."
+  - "HTTP/1.1 CONNECT requests now include Host header by default (RFC 9110 compliant). Legacy behavior can be restored with runtime flag envoy.reloadable_features.http_11_proxy_connect_legacy_format=true"
+  - "ExtProc: Removed support for fail_open and FULL_DUPLEX_STREAMED configuration combinations."
+  - "XSLT transformation feature (Enterprise) is deprecated in v1.21.0 and will be removed in v1.22.0. Plan to use external processing server instead."
+  - "Tracing changes: Route refresh now results in tracing refresh. Can be reverted with runtime guard envoy.reloadable_features.trace_refresh_after_route_refresh=false"
+  - "If upgrading from version older than 1.20.x, you must upgrade incrementally (e.g., 1.19 -> 1.20 -> 1.21)"
+  compatible_k8s_versions:
+    min: "1.29"
+    max: "1.34"
+  necessary_api_versions:
+  - apps/v1
+  - v1
+  - networking.k8s.io/v1
+  - apiextensions.k8s.io/v1
+  values_schema: ""
+  resources:
+  - "gateway.networking.k8s.io/v1/gateways"
+  - "gateway.networking.k8s.io/v1/httproutes"
+  - "v1/services"
+  opa_checks:
+  - >
+    package Fairwinds
+    http2MaxConcurrentStreams[actionItem] {
+        input.kind == "Gateway"
+        actionItem := {
+          "title": "HTTP/2 Max Concurrent Streams Default Changed",
+          "description": "Envoy 1.36.x changes the default max concurrent streams from 2147483647 to 1024. This may impact high-traffic scenarios.",
+          "severity": 0.3,
+          "remediation": "Review your traffic patterns. If you need the old behavior, set the runtime guard envoy.reloadable_features.safe_http2_options to false, but this is temporary. Consider tuning HTTP/2 settings explicitly.",
+          "category": "Performance"
+        }
+      }
+  - >
+    package Fairwinds
+    http2WindowSizeChanges[actionItem] {
+        input.kind == "Gateway"
+        actionItem := {
+          "title": "HTTP/2 Window Size Defaults Changed",
+          "description": "Initial stream window size changed from 256MiB to 16MiB, and connection window size changed from 256MiB to 24MiB. This may affect large uploads/downloads.",
+          "severity": 0.3,
+          "remediation": "Monitor your application performance after upgrade. If issues arise, you can temporarily revert with runtime guard envoy.reloadable_features.safe_http2_options=false, but plan for proper HTTP/2 configuration tuning.",
+          "category": "Performance"
+        }
+      }
+  - >
+    package Fairwinds
+    connectHostHeaderChange[actionItem] {
+        input.kind == "Service"
+        input.spec.type == "LoadBalancer"
+        actionItem := {
+          "title": "HTTP/1.1 CONNECT Requests Now Include Host Header",
+          "description": "The HTTP/1.1 proxy transport socket now generates RFC 9110 compliant CONNECT requests that include a Host header by default.",
+          "severity": 0.2,
+          "remediation": "Verify that your upstream proxies can handle CONNECT requests with Host headers. If you need legacy behavior, set runtime flag envoy.reloadable_features.http_11_proxy_connect_legacy_format to true.",
+          "category": "Reliability"
+        }
+      }
+  - >
+    package Fairwinds
+    extProcConfiguration[actionItem] {
+        input.kind == "Gateway"
+        input.metadata.annotations["gloo.solo.io/ext-proc-enabled"]
+        actionItem := {
+          "title": "ExtProc Configuration Changes",
+          "description": "Envoy 1.36.x removed support for fail_open and FULL_DUPLEX_STREAMED configuration combinations in ExtProc.",
+          "severity": 0.5,
+          "remediation": "Review your ExtProc configurations and update them to use supported configuration combinations. See Envoy v1.36 changelog for details.",
+          "category": "Reliability"
+        }
+      }
+  - >
+    package Fairwinds
+    xsltTransformationDeprecated[actionItem] {
+        input.kind == "VirtualService"
+        input.spec.virtualHost.options.transformations
+        contains(input.spec.virtualHost.options.transformations, "xslt")
+        actionItem := {
+          "title": "XSLT Transformation Deprecated",
+          "description": "XSLT transformation feature (Enterprise) is deprecated in v1.21.0 and will be removed in v1.22.0.",
+          "severity": 0.6,
+          "remediation": "Plan to migrate XSLT transformations to an external processing server. See https://docs.solo.io/gateway/latest/policies/external-processing/ for more information.",
+          "category": "Deprecation"
+        }
+      }
+  - >
+    package Fairwinds
+    incrementalUpgradeRequired[actionItem] {
+        input.kind == "Gateway"
+        startswith(input.metadata.annotations["app.kubernetes.io/version"], "1.19")
+        actionItem := {
+          "title": "Incremental Upgrade Required",
+          "description": "If upgrading from version 1.19.x or older, you must upgrade incrementally: first to 1.20.x, then to 1.21.x.",
+          "severity": 0.8,
+          "remediation": "Follow the incremental upgrade path: use v1.20.x documentation to upgrade from 1.19 to 1.20, then use v1.21.x documentation to upgrade from 1.20 to 1.21.",
+          "category": "Reliability"
+        }
+      }
+  - >
+    package Fairwinds
+    gatewayAPIVersionCheck[actionItem] {
+        input.apiVersion == "gateway.networking.k8s.io/v1"
+        input.kind == "Gateway"
+        actionItem := {
+          "title": "Kubernetes Gateway API Updated",
+          "description": "Gloo Gateway 1.21 uses Kubernetes Gateway API v1.4.1 (upgraded from v1.3.0 in 1.20.x).",
+          "severity": 0.1,
+          "remediation": "Verify your Gateway API resources are compatible with v1.4.1. Review the Gateway API changelog at https://gateway-api.sigs.k8s.io/",
+          "category": "Compatibility"
+        }
+      }
