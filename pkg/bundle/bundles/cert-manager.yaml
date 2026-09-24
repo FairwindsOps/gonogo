@@ -1,0 +1,98 @@
+addons:
+- name: cert-manager
+  versions:
+    start: 1.13.0
+    end: 1.14.6
+  notes: |
+    Upgrade from cert-manager 1.13.0 to 1.14.x series. 
+    IMPORTANT: Skip versions 1.14.0, 1.14.1, 1.14.2, and 1.14.3 due to known critical bugs.
+    Target version should be 1.14.4 or later (latest is 1.14.6 as of creation).
+    
+    Key changes in 1.14:
+    - New startupapicheck OCI image (air-gapped environments must pull this new image)
+    - KeyUsage and BasicConstraints extensions now encoded as critical in CSR
+    - ACME HTTP01 solver pods now include cluster-autoscaler safe-to-evict annotation
+    - Support for X.509 "Other Name" fields
+    - Support for CA certificates with "Name Constraints" and "Authority Information Accessors"
+    
+    Release information: https://cert-manager.io/docs/releases/upgrading/upgrading-1.13-1.14/
+  source:
+    chart: cert-manager
+    repository: https://charts.jetstack.io
+  warnings:
+  - "CRITICAL: Do NOT install v1.14.0, v1.14.1, v1.14.2, or v1.14.3. These versions have known bugs including wrong cainjector image, CA/SelfSigned issuer SAN issues, and cmctl bugs. Install v1.14.4 or later."
+  - "The startupapicheck job now uses a new OCI image called 'startupapicheck' instead of the 'ctl' image. If running in an air-gapped environment, ensure this new image is available: quay.io/jetstack/cert-manager-startupapicheck"
+  - "KeyUsage and BasicConstraints extensions are now encoded as critical in CertificateRequest CSR blobs. This may affect external certificate validation if your CA or validation tools have strict requirements."
+  - "ACME HTTP01 challenge solver Pods now have 'cluster-autoscaler.kubernetes.io/safe-to-evict: true' by default. Override in podTemplate with 'false' if needed."
+  - "cert-manager 1.13.0 reached EOL on June 5, 2024. Upgrade is recommended for continued support."
+  compatible_k8s_versions:
+    max: 1.31
+    min: 1.24
+  necessary_api_versions:
+  - "apps/v1"
+  - "v1"
+  - "apiextensions.k8s.io/v1"
+  - "admissionregistration.k8s.io/v1"
+  values_schema: ""
+  resources:
+  - "networking.k8s.io/v1/ingresses"
+  - "v1/secrets"
+  - "cert-manager.io/v1/certificates"
+  - "cert-manager.io/v1/certificaterequests"
+  - "cert-manager.io/v1/issuers"
+  - "cert-manager.io/v1/clusterissuers"
+  opa_checks:
+  - >
+    package Fairwinds
+    deprecatedAnnotations[actionItem] {
+            input.kind == "Ingress"
+            input.metadata.annotations[k] = _
+            deprecated_annotations := [
+                "certmanager.k8s.io/issuer",
+                "certmanager.k8s.io/cluster-issuer",
+                "certmanager.k8s.io/acme-challenge-type",
+                "certmanager.k8s.io/acme-dns01-provider"
+            ]
+            deprecated_annotations[_] == k
+            actionItem := {
+              "title": "Deprecated cert-manager annotation found on Ingress",
+              "description": sprintf("Ingress %s/%s uses deprecated cert-manager annotation: %s", [input.metadata.namespace, input.metadata.name, k]),
+              "severity": 0.3,
+              "remediation": "Update to use current cert-manager.io/* annotations. Deprecated certmanager.k8s.io/* annotations were removed in cert-manager v1.0. See https://cert-manager.io/docs/releases/upgrading/ for migration details.",
+              "category": "Reliability"
+            }
+          }
+  - >
+    package Fairwinds
+    deprecatedCertAnnotations[actionItem] {
+            input.kind == "Certificate"
+            input.metadata.annotations[k] = _
+            deprecated_annotations := [
+                "certmanager.k8s.io/issuer",
+                "certmanager.k8s.io/cluster-issuer"
+            ]
+            deprecated_annotations[_] == k
+            actionItem := {
+              "title": "Deprecated cert-manager annotation found on Certificate",
+              "description": sprintf("Certificate %s/%s uses deprecated cert-manager annotation: %s", [input.metadata.namespace, input.metadata.name, k]),
+              "severity": 0.3,
+              "remediation": "Update to use current cert-manager.io/* annotations instead of certmanager.k8s.io/*",
+              "category": "Reliability"
+            }
+          }
+  - >
+    package Fairwinds
+    missingStartupApiCheckImage[actionItem] {
+            input.kind == "Job"
+            contains(input.metadata.name, "startupapicheck")
+            container := input.spec.template.spec.containers[_]
+            not contains(container.image, "startupapicheck")
+            contains(container.image, "ctl")
+            actionItem := {
+              "title": "Outdated startupapicheck image in use",
+              "description": sprintf("Job %s/%s is using the old 'ctl' image instead of the new 'startupapicheck' image", [input.metadata.namespace, input.metadata.name]),
+              "severity": 0.5,
+              "remediation": "cert-manager 1.14+ requires the new startupapicheck OCI image. If you manage this job manually or in an air-gapped environment, update to use quay.io/jetstack/cert-manager-startupapicheck",
+              "category": "Reliability"
+            }
+          }
