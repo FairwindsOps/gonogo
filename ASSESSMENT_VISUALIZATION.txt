@@ -1,0 +1,124 @@
+```
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                     ARGOCD UPGRADE ASSESSMENT REPORT                         ║
+║                          Version 9.4.15 → 9.5.6                              ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ DECISION: ✅ GO                                      CONFIDENCE: 85/100       │
+│ RISK LEVEL: 🟢 LOW                                   DATE: 2026-05-01         │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ VERSION CHANGES                                                              │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ Chart Version:       9.4.15 ──────────────────────> 9.5.6                   │
+│ App Version:         v3.3.4 ──────────────────────> v3.3.8                  │
+│ Kubernetes Required: >= 1.25.0-0                                             │
+│ Commits:             47 commits across 50 files                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ RISK ASSESSMENT MATRIX                                                       │
+├─────────────────────────────────┬────────────────┬──────────────────────────┤
+│ Category                        │ Risk Level     │ Notes                    │
+├─────────────────────────────────┼────────────────┼──────────────────────────┤
+│ Breaking Changes                │ 🟢 NONE        │ No breaking changes      │
+│ Application Patches (v3.3.4→8)  │ 🟡 LOW         │ Review release notes     │
+│ VPA Support (New Feature)       │ 🟢 VERY LOW    │ Disabled by default      │
+│ HTTPRoute Support (New Feature) │ 🟢 VERY LOW    │ Disabled by default      │
+│ Extension Installer Update      │ 🟡 MEDIUM      │ If using extensions      │
+│ Git Copy Optimization           │ 🟢 LOW         │ Can override if needed   │
+│ Values Schema Changes           │ 🟢 VERY LOW    │ Backward compatible      │
+├─────────────────────────────────┼────────────────┼──────────────────────────┤
+│ OVERALL ASSESSMENT              │ 🟢 LOW RISK    │ Safe to proceed          │
+└─────────────────────────────────┴────────────────┴──────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ NEW FEATURES (ALL OPTIONAL)                                                  │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ ✨ VerticalPodAutoscaler Support                                             │
+│    • VPA resources for all ArgoCD components                                 │
+│    • Disabled by default - requires VPA CRDs if enabling                     │
+│    • Components: controller, repo-server, server, dex, redis, applicationset │
+│                                                                               │
+│ ✨ HTTPRoute Support for ApplicationSet Webhook                              │
+│    • Gateway API HTTPRoute support added                                     │
+│    • Opt-in feature for Gateway API users                                    │
+│                                                                               │
+│ ⚡ Git Copy Optimization                                                     │
+│    • New default: repoServer.copyutil.extraArgs='--update=none'              │
+│    • Improves git operation performance                                      │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ BUG FIXES INCLUDED                                                           │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ 🐛 VPA updateMode Boolean Coercion Fixed                                     │
+│    • Fixed YAML boolean coercion where "Off" became false                    │
+│                                                                               │
+│ 🐛 PrometheusRule Annotation Template Fixed                                  │
+│    • Corrected template syntax in ArgoAppNotSynced rule                      │
+│                                                                               │
+│ 📦 Extension Installer Updated                                               │
+│    • Updated from v0.0.9 to v1.0.0 (stable release)                          │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ PRE-UPGRADE CHECKLIST                                                        │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ REQUIRED:                                                                    │
+│ ☐ Kubernetes cluster version >= 1.25.0                                       │
+│ ☐ Review ArgoCD release notes v3.3.5 - v3.3.8                                │
+│ ☐ Backup current Helm values                                                 │
+│ ☐ Test in non-production environment                                         │
+│ ☐ Have rollback plan ready                                                   │
+│                                                                               │
+│ OPTIONAL (Feature-dependent):                                                │
+│ ☐ If using extensions: Test compatibility with v1.0.0                        │
+│ ☐ If enabling VPA: Install VPA CRDs                                          │
+│ ☐ If using Gateway API: Verify HTTPRoute config                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ UPGRADE COMMAND                                                              │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                               │
+│   helm upgrade argocd argo/argo-cd \                                         │
+│     --version 9.5.6 \                                                        │
+│     --namespace argocd \                                                     │
+│     --values your-values.yaml \                                              │
+│     --wait                                                                   │
+│                                                                               │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ ROLLBACK (IF NEEDED)                                                         │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                               │
+│   helm rollback argocd -n argocd                                             │
+│                                                                               │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ DELIVERABLES                                                                 │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ 📄 UPGRADE_SUMMARY.md                  Quick reference guide                 │
+│ 📄 ARGOCD_UPGRADE_GONOGO_REPORT.md     500+ line detailed assessment         │
+│ 📄 argocd-9.4.15-to-9.5.6-bundle.yaml  GoNoGo tool specification             │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ REFERENCES                                                                   │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ • Full Changelog: github.com/argoproj/argo-helm/compare/...                  │
+│ • ArgoCD Docs: argo-cd.readthedocs.io                                        │
+│ • Helm Chart: github.com/argoproj/argo-helm/tree/main/charts/argo-cd         │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║ Generated by: GoNoGo Cloud Agent                                             ║
+║ Assessment Date: 2026-05-01                                                  ║
+║ Next Action: Review detailed report & proceed with testing                   ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+```
