@@ -1,0 +1,105 @@
+addons:
+- name: n8n
+  versions:
+    start: 1.16.9
+    end: 1.16.37
+  notes: https://docs.n8n.io/2-0-breaking-changes/
+  source:
+    chart: n8n
+    repository: https://community-charts.github.io/helm-charts
+  warnings:
+  - "This upgrade spans from n8n application version 1.123.4 to 2.18.x, crossing the major v2.0 breaking changes boundary."
+  - "n8n v2.0 introduces significant breaking changes including task runners enabled by default, environment variable access blocked in Code nodes, and removal of in-memory binary data mode."
+  - "The Start node has been removed. Update workflows to use specific trigger nodes instead."
+  - "MySQL/MariaDB support has been dropped. You must migrate to PostgreSQL before upgrading."
+  - "Execute Command and Local File Trigger nodes are disabled by default. Set N8N_NODES_INCLUDE to enable them if needed."
+  - "Task runners are now enabled by default. Code node executions run in isolated environments. Review your Code nodes for compatibility."
+  - "Environment variable access from Code nodes is now blocked by default (N8N_BLOCK_ENV_ACCESS_IN_NODE=true). Explicitly enable if required."
+  - "The n8n --tunnel CLI option has been removed. Use alternative webhook configuration methods."
+  - "Dotenv configuration parsing has changed. Review your .env files for multiline values and comment syntax (# marks comments)."
+  - "Workflow publishing system has replaced activate/deactivate toggles. Old 'Activate' buttons are now 'Publish/Unpublish'."
+  - "Run the Migration Report tool (https://docs.n8n.io/migration-tool/) to identify workflow-level and instance-level issues before upgrading."
+  - "Pyodide-based Python Code node has been removed. Python Code nodes must be updated to use pythonNative parameter with the new task runner."
+  - "S3-compatible storage or filesystem mode is now required for binary data. In-memory mode has been removed."
+  - "OAuth callback URLs now require authentication by default. Review your OAuth configurations."
+  - "Release channels renamed from 'latest/next' to 'stable/beta'. Update image tags if using channel-based tags."
+  compatible_k8s_versions:
+    min: 1.23
+    max: 1.35
+  necessary_api_versions:
+  - apps/v1
+  - v1
+  - batch/v1
+  resources:
+  - deployments
+  - statefulsets
+  - services
+  - persistentvolumeclaims
+  opa_checks:
+  - >
+    package Fairwinds
+    mysqlDatabaseDetected[actionItem] {
+            input.kind == "ConfigMap"
+            contains(input.data.DB_TYPE, "mysql")
+            actionItem := {
+              "title": "MySQL/MariaDB No Longer Supported",
+              "description": "n8n v2.0 has dropped support for MySQL and MariaDB databases. You must migrate to PostgreSQL before upgrading.",
+              "severity": 1.0,
+              "remediation": "Migrate your database to PostgreSQL using n8n's migration tools before attempting this upgrade. See https://docs.n8n.io/hosting/configuration/database/",
+              "category": "Reliability"
+            }
+          }
+  - >
+    package Fairwinds
+    deprecatedStartNode[actionItem] {
+            input.kind == "Workflow"
+            node := input.spec.nodes[_]
+            node.type == "n8n-nodes-base.start"
+            actionItem := {
+              "title": "Start Node Removed in v2.0",
+              "description": "The Start node has been removed in n8n v2.0. Workflows using this node will fail.",
+              "severity": 0.9,
+              "remediation": "Replace Start nodes with specific trigger nodes (e.g., Manual Trigger, Webhook, Schedule Trigger). Review all workflows before upgrading.",
+              "category": "Reliability"
+            }
+          }
+  - >
+    package Fairwinds
+    codeNodeEnvVarAccess[actionItem] {
+            input.kind == "ConfigMap"
+            not input.data.N8N_BLOCK_ENV_ACCESS_IN_NODE
+            actionItem := {
+              "title": "Code Node Environment Variable Access Blocked by Default",
+              "description": "Starting with v2.0, environment variable access from Code nodes is blocked by default for security. If your workflows rely on accessing environment variables in Code nodes, you must explicitly enable it.",
+              "severity": 0.6,
+              "remediation": "Set N8N_BLOCK_ENV_ACCESS_IN_NODE=false if your Code nodes need environment variable access, or refactor your workflows to pass variables explicitly. See https://docs.n8n.io/2-0-breaking-changes/",
+              "category": "Security"
+            }
+          }
+  - >
+    package Fairwinds
+    inMemoryBinaryDataMode[actionItem] {
+            input.kind == "ConfigMap"
+            input.data.EXECUTIONS_DATA_SAVE_ON_ERROR == "all"
+            not input.data.N8N_BINARY_DATA_MODE
+            actionItem := {
+              "title": "In-Memory Binary Data Mode Removed",
+              "description": "n8n v2.0 has removed the in-memory binary data mode. You must configure either filesystem or S3-compatible storage for binary data.",
+              "severity": 0.8,
+              "remediation": "Configure N8N_BINARY_DATA_MODE to either 'filesystem' or 's3' and set up appropriate storage before upgrading. See https://docs.n8n.io/hosting/configuration/environment-variables/binary-data/",
+              "category": "Reliability"
+            }
+          }
+  - >
+    package Fairwinds
+    taskRunnerConfiguration[actionItem] {
+            input.kind == "ConfigMap"
+            not input.data.N8N_RUNNERS_MODE
+            actionItem := {
+              "title": "Task Runners Enabled by Default in v2.0",
+              "description": "Task runners are now enabled by default, running Code node executions in isolated environments. This improves security but may affect Code nodes relying on certain modules or environment access.",
+              "severity": 0.5,
+              "remediation": "Review your Code nodes for compatibility with task runner isolation. Pyodide-based Python nodes must be migrated to pythonNative. Set N8N_RUNNERS_MODE if you need to adjust this behavior. See https://docs.n8n.io/hosting/securing/hardening-task-runners/",
+              "category": "Security"
+            }
+          }
