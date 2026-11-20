@@ -1,0 +1,98 @@
+addons:
+- name: coder
+  versions:
+    start: 2.24.1
+    end: 2.25.0
+  notes: https://github.com/coder/coder/releases/tag/v2.25.0
+  source:
+    chart: coder
+    repository: https://helm.coder.com/v2
+  warnings:
+  - "This is a mainline Coder release. Enterprise customers without a staging environment should install the latest stable release while refining this version."
+  - "Connection logs have been moved from Audit Log to a new Connection Log. Connections to workspaces (via SSH, workspace apps, or browser port-forwarding) will no longer create entries in the audit log."
+  - "Connection events older than 90 days will be deleted from the Audit Log during upgrade. If you require this legacy data, back up the database or query from REST API before upgrading."
+  - "The 'coder create' CLI command now includes a --preset flag. Templates with presets but no default preset will prompt users for selection, breaking non-interactive workflows. Pass --preset explicitly to avoid issues."
+  - "The workspace update behavior has changed (from v2.24.0): workspace updates now explicitly trigger a stop build followed by a start build, rather than updating in-place."
+  - "CancelWorkspaceBuild method in codersdk now accepts an optional request parameter."
+  - "Dynamic Parameters feature is now Generally Available (removed beta labels). New immutable parameters are allowed for existing workspaces."
+  - "Coder can now be used as an OAuth2 provider (experimental feature)."
+  - "External Coder MCP server is now available as an experiment for AI agent workspace creation."
+  - "DevContainer integration improvements include automatic detection and auto-start support for discovered containers."
+  - "Prebuilt workspace reconciliation can now be paused by users."
+  - "Premium licensed customers have a default limit of 800 agentic AI workspaces per user."
+  compatible_k8s_versions:
+    max: 1.36
+    min: 1.19
+  resources:
+  - "apps/v1/deployments"
+  - "v1/services"
+  - "v1/configmaps"
+  - "v1/secrets"
+  - "v1/persistentvolumeclaims"
+  - "networking.k8s.io/v1/ingresses"
+  - "rbac.authorization.k8s.io/v1/roles"
+  - "rbac.authorization.k8s.io/v1/rolebindings"
+  opa_checks:
+  - >
+    package Fairwinds
+    connectionLogRetentionWarning[actionItem] {
+            input.kind == "ConfigMap"
+            input.metadata.labels["app.kubernetes.io/name"] == "coder"
+            not input.data["CODER_CONNECTION_LOG_RETENTION"]
+            actionItem := {
+              "title": "Connection Log Retention Not Configured",
+              "description": "With v2.25.0, connection logs are moved to a separate Connection Log. Consider configuring retention policies to manage log storage growth.",
+              "severity": 0.3,
+              "remediation": "Set CODER_CONNECTION_LOG_RETENTION environment variable in your Helm values to configure connection log retention period. See https://coder.com/docs/admin/monitoring/connection-logs for details.",
+              "category": "Reliability"
+            }
+          }
+  - >
+    package Fairwinds
+    postgresqlVersionCheck[actionItem] {
+            input.kind == "Deployment"
+            input.metadata.labels["app.kubernetes.io/name"] == "postgresql"
+            container := input.spec.template.spec.containers[_]
+            contains(container.image, "postgresql")
+            not contains(container.image, ":11")
+            not contains(container.image, ":12")
+            not contains(container.image, ":13")
+            not contains(container.image, ":14")
+            not contains(container.image, ":15")
+            not contains(container.image, ":16")
+            actionItem := {
+              "title": "PostgreSQL Version Compatibility",
+              "description": "Coder requires PostgreSQL 11 or newer with the contrib package installed. Ensure your database version is compatible before upgrading.",
+              "severity": 0.2,
+              "remediation": "Verify your PostgreSQL version is 11 or newer. Upgrade PostgreSQL if needed before upgrading Coder to v2.25.0.",
+              "category": "Reliability"
+            }
+          }
+  - >
+    package Fairwinds
+    nonInteractiveWorkflowsWithPresets[actionItem] {
+            input.kind == "ConfigMap"
+            input.metadata.labels["app.kubernetes.io/name"] == "coder"
+            contains(input.metadata.annotations["description"], "automated")
+            actionItem := {
+              "title": "Automated Workflows May Break with Preset Changes",
+              "description": "CLI create command now requires --preset flag for templates with presets but no default. Non-interactive scripts will fail or hang due to unexpected prompts.",
+              "severity": 0.5,
+              "remediation": "Update automated scripts using 'coder create' to explicitly pass --preset flag. Review templates to set default presets where appropriate.",
+              "category": "Reliability"
+            }
+          }
+  - >
+    package Fairwinds
+    auditLogDependencies[actionItem] {
+            input.kind == "Deployment"
+            input.metadata.labels["app.kubernetes.io/name"] == "coder"
+            not input.metadata.annotations["coder.com/audit-log-backup-completed"]
+            actionItem := {
+              "title": "Audit Log Backup Recommended",
+              "description": "Connection events older than 90 days will be deleted from the Audit Log during upgrade to v2.25.0. These events are moved to the new Connection Log.",
+              "severity": 0.4,
+              "remediation": "Back up your database or query connection events from the REST API before upgrading if you need to retain this historical data. Add annotation 'coder.com/audit-log-backup-completed=true' once backup is complete.",
+              "category": "Reliability"
+            }
+          }
