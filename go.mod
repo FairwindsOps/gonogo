@@ -6,18 +6,18 @@ require (
 	github.com/blang/semver/v4 v4.0.0
 	github.com/fairwindsops/insights-plugins/plugins/opa v0.0.0-20230914162438-39660ccccead
 	github.com/hashicorp/go-multierror v1.1.1
-	github.com/spf13/cobra v1.9.1
-	github.com/spf13/pflag v1.0.6
+	github.com/spf13/cobra v1.10.2
+	github.com/spf13/pflag v1.1.0
 	github.com/stretchr/testify v1.12.1
 	github.com/thoas/go-funk v0.9.3
 	gopkg.in/yaml.v3 v3.0.1
 	helm.sh/helm/v3 v3.12.3
-	k8s.io/api v0.28.1
-	k8s.io/apimachinery v0.28.1
-	k8s.io/client-go v0.28.1
+	k8s.io/api v0.37.2
+	k8s.io/apimachinery v0.37.2
+	k8s.io/client-go v0.37.2
 	k8s.io/klog v1.0.0
-	k8s.io/klog/v2 v2.100.1
-	sigs.k8s.io/controller-runtime v0.16.2
+	k8s.io/klog/v2 v2.140.0
+	sigs.k8s.io/controller-runtime v0.25.2
 )
 
 require (
