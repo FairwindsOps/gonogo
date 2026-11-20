@@ -1,0 +1,54 @@
+// DO NOT EDIT - Managed by Terraform
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":dependencyDashboard"
+  ],
+  "labels": ["dependencies"],
+  "prConcurrentLimit": 10,
+  "branchConcurrentLimit": 10,
+  "minimumReleaseAge": "7 days",
+  "enabledManagers": [
+    "gomod",
+    "dockerfile",
+    "npm"
+  ],
+  "ignorePaths": [".circleci/**", "docs/package.json", "docs/package-lock.json"],
+  "postUpdateOptions": ["gomodTidy", "gomodUpdateImportPaths"],
+  "packageRules": [
+    {
+      "description": "Group all non-major (minor + patch) updates into a single PR",
+      "matchUpdateTypes": ["minor", "patch", "digest", "lockFileMaintenance"],
+      "groupName": "all non-major dependencies",
+      "groupSlug": "all-non-major",
+      "minimumReleaseAge": "7 days"
+    },
+    {
+      "description": "Keep major updates separate and also enforce minimum age",
+      "matchUpdateTypes": ["major"],
+      "minimumReleaseAge": "7 days"
+    },
+    {
+      "description": "Disable replace updates",
+      "matchManagers": ["gomod"],
+      "matchDepTypes": ["replace"],
+      "enabled": false
+    },
+    {
+      "description": "Pin exact versions in package.json (no ^/~ ranges)",
+      "matchManagers": ["npm"],
+      "rangeStrategy": "pin"
+    },
+    {
+      "description": "Every upgrade: upstream release must be at least 7 days old",
+      "matchManagers": ["gomod", "dockerfile", "npm"],
+      "minimumReleaseAge": "7 days"
+    },
+    {
+      "description": "Go and Node versions are pinned by Terraform in CircleCI",
+      "matchDatasources": ["golang-version", "node-version"],
+      "enabled": false
+    }
+  ]
+}
