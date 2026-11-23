@@ -19,10 +19,12 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"helm.sh/helm/v3/pkg/release"
-	"helm.sh/helm/v3/pkg/releaseutil"
-	helmstoragev3 "helm.sh/helm/v3/pkg/storage"
-	driverv3 "helm.sh/helm/v3/pkg/storage/driver"
+	helmv4 "helm.sh/helm/v4/pkg/release"
+	"helm.sh/helm/v4/pkg/release/common"
+	release "helm.sh/helm/v4/pkg/release/v1"
+	relutil "helm.sh/helm/v4/pkg/release/v1/util"
+	"helm.sh/helm/v4/pkg/storage"
+	"helm.sh/helm/v4/pkg/storage/driver"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -48,11 +50,15 @@ func NewHelm() *Helm {
 
 // GetReleasesVersionThree retrieves helm 3 releases from Secrets
 func (h *Helm) GetReleasesVersionThree() error {
-	hs := driverv3.NewSecrets(h.Kube.Client.CoreV1().Secrets(""))
-	helmClient := helmstoragev3.Init(hs)
+	hs := driver.NewSecrets(h.Kube.Client.CoreV1().Secrets(""))
+	helmClient := storage.Init(hs)
 	namespaces := h.GetNamespaces()
 
-	releases, err := helmClient.ListDeployed()
+	listed, err := helmClient.ListDeployed()
+	if err != nil {
+		return err
+	}
+	releases, err := releasesV1(listed)
 	if err != nil {
 		return err
 	}
@@ -72,14 +78,29 @@ func (h *Helm) GetReleasesVersionThree() error {
 }
 
 func (h *Helm) deployedReleasesPerNamespace(namespace string, releases []*release.Release) []*release.Release {
-	return releaseutil.All(deployed, relNamespace(namespace)).Filter(releases)
+	return relutil.All(deployed, relNamespace(namespace)).Filter(releases)
+}
+
+func releasesV1(rels []helmv4.Releaser) ([]*release.Release, error) {
+	out := make([]*release.Release, 0, len(rels))
+	for _, rel := range rels {
+		switch r := rel.(type) {
+		case *release.Release:
+			out = append(out, r)
+		case release.Release:
+			out = append(out, &r)
+		default:
+			return nil, fmt.Errorf("unsupported release type %T", rel)
+		}
+	}
+	return out, nil
 }
 
 func deployed(rls *release.Release) bool {
-	return rls.Info.Status == release.StatusDeployed
+	return rls.Info.Status == common.StatusDeployed
 }
 
-func relNamespace(ns string) releaseutil.FilterFunc {
+func relNamespace(ns string) relutil.FilterFunc {
 	return func(rls *release.Release) bool {
 		return rls.Namespace == ns
 	}

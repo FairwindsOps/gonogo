@@ -18,7 +18,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"helm.sh/helm/v3/pkg/release"
+	helmv4 "helm.sh/helm/v4/pkg/release"
+	release "helm.sh/helm/v4/pkg/release/v1"
 )
 
 func Test_helmToRelease(t *testing.T) {
@@ -49,4 +50,14 @@ func Test_helmToRelease(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_releasesV1(t *testing.T) {
+	ptr := &release.Release{Name: "nginx"}
+	got, err := releasesV1([]helmv4.Releaser{ptr, release.Release{Name: "redis"}})
+	assert.NoError(t, err)
+	assert.Equal(t, []*release.Release{ptr, {Name: "redis"}}, got)
+
+	_, err = releasesV1([]helmv4.Releaser{"nope"})
+	assert.EqualError(t, err, "unsupported release type string")
 }

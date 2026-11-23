@@ -20,7 +20,7 @@ import (
 	"github.com/fairwindsops/gonogo/pkg/bundle"
 	"github.com/fairwindsops/gonogo/pkg/helm"
 	"github.com/thoas/go-funk"
-	"helm.sh/helm/v3/pkg/release"
+	release "helm.sh/helm/v4/pkg/release/v1"
 	"k8s.io/klog"
 
 	"github.com/blang/semver/v4"
