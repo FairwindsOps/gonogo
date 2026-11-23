@@ -24,7 +24,7 @@ import (
 	"github.com/fairwindsops/insights-plugins/plugins/opa/pkg/rego"
 	"gopkg.in/yaml.v3"
 
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 var (

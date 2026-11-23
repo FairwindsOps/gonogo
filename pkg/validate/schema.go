@@ -10,7 +10,7 @@ import (
 	"time"
 
 	chartutil "helm.sh/helm/v4/pkg/chart/common/util"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 // validateValues checks the values in the chart aginst the schema in the upstream chart
