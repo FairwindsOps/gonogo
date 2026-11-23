@@ -6,7 +6,7 @@ import (
 	"github.com/blang/semver/v4"
 	"github.com/thoas/go-funk"
 	clusterVersion "k8s.io/apimachinery/pkg/version"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 func (m *match) validateClusterVersion(cv *clusterVersion.Info) error {
