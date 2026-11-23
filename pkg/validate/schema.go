@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"time"
 
-	"helm.sh/helm/v3/pkg/chartutil"
+	chartutil "helm.sh/helm/v4/pkg/chart/common/util"
 	"k8s.io/klog"
 )
 
